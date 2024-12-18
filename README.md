@@ -1,6 +1,6 @@
 # egui_taffy: Egui Taffy Ui
 
-[![egui_version](https://img.shields.io/badge/egui-0.29-blue)](https://github.com/emilk/egui)
+[![egui_version](https://img.shields.io/badge/egui-0.30-blue)](https://github.com/emilk/egui)
 [![taffy_version](https://img.shields.io/badge/taffy-0.7-blue)](https://github.com/DioxusLabs/taffy)
 [![Latest version](https://img.shields.io/crates/v/egui_taffy.svg)](https://crates.io/crates/egui_taffy)
 [![Documentation](https://docs.rs/egui_taffy/badge.svg)](https://docs.rs/egui_taffy)
@@ -13,6 +13,7 @@ Flexible egui layout library that supports CSS Block, Flexbox, Grid layouts. It 
 
 | egui_taffy | egui | taffy |
 | ---      | ---  | ---   |
+| 0.4      | 0.30 | 0.7   |
 | 0.3      | 0.29 | 0.7   | 
 | 0.2      | 0.29 | 0.7   | 
 | 0.1      | 0.29 | 0.6   | 
@@ -145,7 +146,7 @@ This crate is inspired by [lucasmerlin](https://github.com/lucasmerlin) previous
 
 It combines ideas from both crates and builds upon them to provide easy to use egui like API to write your UI with modern layout support.
 
-It uses egui 0.29 new features intrinsic size and request_discard to request immediate frame redraw (without even drawing the current frame) if layout has changed.
+It uses egui 0.30 new features intrinsic size and request_discard to request immediate frame redraw (without even drawing the current frame) if layout has changed.
 
 ## Contributing
 
