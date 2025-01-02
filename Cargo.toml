@@ -9,6 +9,7 @@ description = "Grid, Flexbox, Block layout support for egui using taffy"
 keywords = ["egui", "flexbox", "taffy", "layout", "ui"]
 categories = ["gui"]
 license = "MIT"
+exclude = ["/example", "/.github"]
 
 [dependencies]
 egui = { version = "0.30", default-features = false }
@@ -19,19 +20,9 @@ taffy = { version = "0.7", default-features = false, features = ["taffy_tree"] }
 default = ["taffy_default"]
 
 taffy_default = [
-  "taffy/block_layout",
-  "taffy/content_size",
-  "taffy/flexbox",
-  "taffy/grid",
-  "taffy/std",
+    "taffy/block_layout",
+    "taffy/content_size",
+    "taffy/flexbox",
+    "taffy/grid",
+    "taffy/std",
 ]
-
-[dev-dependencies]
-eframe = { version = "0.30", default-features = false, features = [
-  "wgpu",
-  "accesskit",
-  "default_fonts",
-  "wayland",
-  "web_screen_reader",
-  "x11",
-] }

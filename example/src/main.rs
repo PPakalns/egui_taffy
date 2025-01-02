@@ -1,15 +1,83 @@
-use egui::Vec2b;
-use egui_taffy::{tui, TuiBuilderLogic};
+use eframe::egui::{self, Context, Vec2b};
+use eframe::{App, Frame};
+use egui_taffy::{taffy, tui, TuiBuilderLogic};
 use taffy::{
     prelude::{auto, fr, length, percent, repeat, span},
     style_helpers, Style,
 };
 
-fn main() -> eframe::Result {
-    let mut grow_variables = None;
-    let mut button_variables = Default::default();
+#[derive(Default)]
+struct MyApp {
+    grow_variables: Option<GrowVariables>,
+    button_variables: ButtonParams,
+}
 
-    eframe::run_simple_native("demo", Default::default(), move |ctx, _frame| {
+#[cfg(not(target_arch = "wasm32"))]
+fn main() -> eframe::Result {
+    use eframe::egui::ViewportBuilder;
+
+    let options = eframe::NativeOptions {
+        centered: true,
+        persist_window: false,
+        viewport: ViewportBuilder {
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
+    eframe::run_native(
+        "Demo",
+        options,
+        Box::new(|_cc| Ok(Box::new(MyApp::default()))),
+    )
+}
+
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    use eframe::wasm_bindgen::JsCast as _;
+    use eframe::{WebOptions, WebRunner};
+
+    let web_options = WebOptions::default();
+
+    wasm_bindgen_futures::spawn_local(async {
+        let document = web_sys::window()
+            .expect("No window")
+            .document()
+            .expect("No document");
+
+        let canvas = document
+            .get_element_by_id("the_canvas_id")
+            .expect("Failed to find the_canvas_id")
+            .dyn_into::<web_sys::HtmlCanvasElement>()
+            .expect("the_canvas_id was not a HtmlCanvasElement");
+
+        let start_result = WebRunner::new()
+            .start(
+                canvas,
+                web_options,
+                Box::new(|_cc| Ok(Box::new(MyApp::default()))),
+            )
+            .await;
+
+        // Remove the loading text and spinner:
+        if let Some(loading_text) = document.get_element_by_id("loading_text") {
+            match start_result {
+                Ok(_) => {
+                    loading_text.remove();
+                }
+                Err(e) => {
+                    loading_text.set_inner_html(
+                        "<p> The app has crashed. See the developer console for details. </p>",
+                    );
+                    panic!("Failed to start eframe: {e:?}");
+                }
+            }
+        }
+    });
+}
+
+impl App for MyApp {
+    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         // Enable multipass rendering upon request without drawing to screen
         //
         // View README for more details
@@ -30,17 +98,17 @@ fn main() -> eframe::Result {
 
         flex_wrap_demo(ctx);
 
-        grow_demo(ctx, &mut grow_variables);
+        grow_demo(ctx, &mut self.grow_variables);
 
-        button_demo(ctx, &mut button_variables);
+        button_demo(ctx, &mut self.button_variables);
 
         overflow_demo(ctx);
 
         grid_sticky(ctx);
-    })
+    }
 }
 
-fn flex_wrap_demo(ctx: &egui::Context) {
+fn flex_wrap_demo(ctx: &Context) {
     let default_style = || Style {
         padding: length(8.),
         gap: length(8.),
@@ -112,7 +180,7 @@ fn flex_wrap_demo(ctx: &egui::Context) {
     });
 }
 
-fn flex_grid_demo(ctx: &egui::Context) {
+fn flex_grid_demo(ctx: &Context) {
     egui::Window::new("Grid demo").show(ctx, |ui| {
         // Style rules can be defined as functions and applied with
         // [`TuiBuilder::mut_style`] function.
@@ -213,7 +281,7 @@ pub struct GrowVariables {
     padding: f32,
 }
 
-fn grow_demo(ctx: &egui::Context, variables: &mut Option<GrowVariables>) {
+fn grow_demo(ctx: &Context, variables: &mut Option<GrowVariables>) {
     let GrowVariables {
         gap,
         margin,
@@ -294,7 +362,7 @@ fn grow_demo(ctx: &egui::Context, variables: &mut Option<GrowVariables>) {
     });
 }
 
-fn flex_demo(ctx: &egui::Context) {
+fn flex_demo(ctx: &Context) {
     egui::Window::new("Flex demo")
         .scroll(Vec2b { x: true, y: true })
         .show(ctx, |ui| {
@@ -409,7 +477,7 @@ struct ButtonParams {
     selected: bool,
 }
 
-fn button_demo(ctx: &egui::Context, params: &mut ButtonParams) {
+fn button_demo(ctx: &Context, params: &mut ButtonParams) {
     egui::Window::new("Button demo")
         .scroll(Vec2b { x: true, y: true })
         .show(ctx, |ui| {
@@ -505,7 +573,7 @@ fn button_demo(ctx: &egui::Context, params: &mut ButtonParams) {
         });
 }
 
-fn overflow_demo(ctx: &egui::Context) {
+fn overflow_demo(ctx: &Context) {
     egui::Window::new("Overflow demo")
         .scroll(Vec2b { x: true, y: true })
         .show(ctx, |ui| {
@@ -548,7 +616,7 @@ fn overflow_demo(ctx: &egui::Context) {
         });
 }
 
-fn grid_sticky(ctx: &egui::Context) {
+fn grid_sticky(ctx: &Context) {
     egui::Window::new("Sticky header and column in grid")
         .scroll(Vec2b::FALSE)
         .show(ctx, |ui| {
