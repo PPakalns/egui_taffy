@@ -9,6 +9,7 @@ description = "Grid, Flexbox, Block layout support for egui using taffy"
 keywords = ["egui", "flexbox", "taffy", "layout", "ui"]
 categories = ["gui"]
 license = "MIT"
+rust-version = "1.81"
 
 [dependencies]
 egui = { version = "0.30", default-features = false }
