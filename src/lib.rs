@@ -2,7 +2,7 @@
 #![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
@@ -163,8 +163,6 @@ pub struct Tui {
 
     last_scroll_offset: egui::Vec2,
 
-    used_items: HashSet<egui::Id>,
-
     root_rect: egui::Rect,
     available_space: Option<Size<AvailableSpace>>,
 
@@ -207,7 +205,7 @@ impl Tui {
                 .clone();
             state
         });
-        let state = state
+        let mut state = state
             .try_lock_arc()
             .expect("Each egui_taffy instance should have unique id");
 
@@ -220,7 +218,6 @@ impl Tui {
             current_viewport: root_rect,
             current_viewport_content: root_rect,
             taffy_container: Default::default(),
-            used_items: Default::default(),
             root_rect,
             available_space,
             current_id: id,
@@ -264,70 +261,69 @@ impl Tui {
         style: taffy::Style,
         sticky: egui::Vec2b,
     ) -> (NodeId, TaffyContainerUi) {
-        if !self.used_items.insert(id) {
-            log::error!("Taffy layout id collision!");
-        }
-
         let child_idx = self.current_node_index;
         self.current_node_index += 1;
 
         let mut first_frame = false;
 
-        let node_id = if let Some(node_id) = self.state.id_to_node_id.get(&id).copied() {
-            if self.state.taffy_tree.style(node_id).unwrap() != &style {
-                self.state.taffy_tree.set_style(node_id, style).unwrap();
+        let state: &mut TaffyState = &mut self.state;
+
+        let node_id = match state.id_to_node_id.entry(id) {
+            std::collections::hash_map::Entry::Occupied(mut occupied_entry) => {
+                let val = occupied_entry.get_mut();
+
+                if val.keep {
+                    log::error!("Taffy layout id collision!");
+                }
+                val.keep = true;
+
+                let node_id = val.node_id;
+                if state.taffy_tree.style(node_id).unwrap() != &style {
+                    state.taffy_tree.set_style(node_id, style).unwrap();
+                }
+                node_id
             }
-            node_id
-        } else {
-            first_frame = true;
-            let node = self.state.taffy_tree.new_leaf(style).unwrap();
-            self.state.id_to_node_id.insert(id, node);
-            node
+            std::collections::hash_map::Entry::Vacant(vacant_entry) => {
+                first_frame = true;
+                let node_id = state.taffy_tree.new_leaf(style).unwrap();
+                vacant_entry.insert(NodeData {
+                    node_id,
+                    keep: true,
+                });
+                node_id
+            }
         };
 
         if let Some(current_node) = self.current_node {
-            if child_idx < self.state.taffy_tree.child_count(current_node) {
+            if child_idx < state.taffy_tree.child_count(current_node) {
                 // Check if child at position matches
-                if self
-                    .state
+                if state
                     .taffy_tree
                     .child_at_index(current_node, child_idx)
                     .unwrap()
                     != node_id
                 {
-                    // Remove element if it was attached to some node previously
-                    let parent = self.state.taffy_tree.parent(node_id);
-                    if let Some(parent) = parent {
-                        self.state.taffy_tree.remove_child(parent, node_id).unwrap();
-                    }
-
                     // Layout has changed, remove all following children
                     //
                     // Because node one by one removal is slow if items have changed their location.
                     // Faster is to remove whole tail.
-                    let count = self.state.taffy_tree.child_count(current_node);
-                    self.state
+                    let count = state.taffy_tree.child_count(current_node);
+                    state
                         .taffy_tree
                         .remove_children_range(current_node, child_idx..count)
                         .unwrap();
 
                     // Add element to the end
-                    self.state
-                        .taffy_tree
-                        .add_child(current_node, node_id)
-                        .unwrap();
+                    state.taffy_tree.add_child(current_node, node_id).unwrap();
                 }
             } else {
                 // Add element to the end
-                self.state
-                    .taffy_tree
-                    .add_child(current_node, node_id)
-                    .unwrap();
+                state.taffy_tree.add_child(current_node, node_id).unwrap();
             }
         }
 
         let container = TaffyContainerUi {
-            layout: *self.state.layout(node_id),
+            layout: *state.layout(node_id),
             parent_rect: self.current_rect,
             first_frame,
             sticky,
@@ -509,11 +505,12 @@ impl Tui {
             }
         };
 
-        let mut current_cnt = self.state.taffy_tree.child_count(node_id);
+        let current_cnt = self.state.taffy_tree.child_count(node_id);
         if current_cnt > self.current_node_index {
             self.state
                 .taffy_tree
-                .remove_children_range(node_id, self.current_node_index..current_cnt);
+                .remove_children_range(node_id, self.current_node_index..current_cnt)
+                .unwrap();
         }
 
         self.current_id = stored_id;
@@ -675,19 +672,22 @@ impl Tui {
 
         let current_node = self.current_node.unwrap();
 
-        // Remove unused nodes
+        // Remove all unused nodes
         let state = self.state.deref_mut();
-        state.id_to_node_id.retain(|k, v| {
-            if self.used_items.contains(k) {
+        state.id_to_node_id.retain(|_k, node_data| {
+            if node_data.keep {
+                node_data.keep = false;
                 return true;
             }
-            if let Some(parent) = state.taffy_tree.parent(*v) {
-                state.taffy_tree.remove_child(parent, *v).unwrap();
+
+            // Remove unused node
+            let node_id = node_data.node_id;
+            if let Some(parent) = state.taffy_tree.parent(node_id) {
+                state.taffy_tree.remove_child(parent, node_id).unwrap();
             }
-            state.taffy_tree.remove(*v).unwrap();
+            state.taffy_tree.remove(node_id).unwrap();
             false
         });
-        self.used_items.clear();
 
         let taffy = &mut state.taffy_tree;
 
@@ -1131,9 +1131,16 @@ where
 pub struct TaffyState {
     taffy_tree: TaffyTree<Context>,
 
-    id_to_node_id: HashMap<egui::Id, NodeId>,
+    id_to_node_id: HashMap<egui::Id, NodeData>,
 
     last_size: egui::Vec2,
+}
+
+/// Stores information about node that was identified by egui::Id
+pub struct NodeData {
+    /// [`taffy::TaffyTree`] node id
+    pub node_id: NodeId,
+    keep: bool,
 }
 
 impl TaffyState {
@@ -1156,9 +1163,9 @@ impl TaffyState {
         &self.taffy_tree
     }
 
-    /// Retrieve id mapping from [`egui::Id`] to [`NodeId`]
+    /// Mapping to retrieve nodes based on [`egui::Id`]
     #[inline]
-    pub fn items(&self) -> &HashMap<egui::Id, NodeId> {
+    pub fn items(&self) -> &HashMap<egui::Id, NodeData> {
         &self.id_to_node_id
     }
 }
