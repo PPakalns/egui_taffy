@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 egui_taffy = { path = "./../../" }
-eframe = { version = "0.31" }
+eframe = { version = "0.32" }
 wasm-bindgen-futures = { version = "0.4" }
 
 [patch.crates-io]

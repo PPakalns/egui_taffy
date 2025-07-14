@@ -25,9 +25,8 @@ impl_widget!(
     egui::DragValue<'_>,
     egui::Hyperlink,
     egui::ImageButton<'_>,
-    egui::RadioButton,
+    egui::RadioButton<'_>,
     egui::Link,
-    egui::SelectableLabel,
     egui::Slider<'_>,
     egui::TextEdit<'_>,
     egui::Spinner

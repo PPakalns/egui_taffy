@@ -1,6 +1,6 @@
 # egui_taffy: Egui Taffy Ui
 
-[![egui_version](https://img.shields.io/badge/egui-0.31-blue)](https://github.com/emilk/egui)
+[![egui_version](https://img.shields.io/badge/egui-0.32-blue)](https://github.com/emilk/egui)
 [![taffy_version](https://img.shields.io/badge/taffy-0.7-blue)](https://github.com/DioxusLabs/taffy)
 [![Latest version](https://img.shields.io/crates/v/egui_taffy.svg)](https://crates.io/crates/egui_taffy)
 [![Documentation](https://docs.rs/egui_taffy/badge.svg)](https://docs.rs/egui_taffy)
@@ -15,15 +15,16 @@ This library is in active development and some breaking changes are expected, bu
 
 ## Version compatibility
 
-| egui_taffy | egui | taffy | MSRV |
-| ---        | ---  | ---   | ---  |
-| 0.7        | 0.31 | 0.7.3 | 1.81 |
-| 0.6        | 0.30 | 0.7.3 | 1.81 |
-| 0.5        | 0.30 | 0.7   | 1.83 |
-| 0.4        | 0.30 | 0.7   | 1.83 |
-| 0.3        | 0.29 | 0.7   | 1.83 | 
-| 0.2        | 0.29 | 0.7   | 1.83 | 
-| 0.1.2      | 0.29 | 0.6   | 1.83 | 
+| egui_taffy | egui | taffy | MSRV           |
+|------------|------| ---   |----------------|
+| 0.8        | 0.32 | 0.7.3 | 1.85           |
+| 0.7        | 0.31 | 0.7.3 | 1.81           |
+| 0.6        | 0.30 | 0.7.3 | 1.81           |
+| 0.5        | 0.30 | 0.7   | 1.83           |
+| 0.4        | 0.30 | 0.7   | 1.83           |
+| 0.3        | 0.29 | 0.7   | 1.83           | 
+| 0.2        | 0.29 | 0.7   | 1.83           | 
+| 0.1.2      | 0.29 | 0.6   | 1.83           | 
 | 0.1        | 0.29 | 0.6   | 1.83 (nightly) | 
 
 To use add `egui_taffy` to your project dependencies in `Cargo.toml` file.
