@@ -7,3 +7,7 @@ edition = "2021"
 egui_taffy = { path = "./../../" }
 eframe = { version = "0.31" }
 wasm-bindgen-futures = { version = "0.4" }
+
+[patch.crates-io]
+# Taffy improvements that have not been released yet
+taffy = { git = "https://github.com/PPakalns/taffy", rev = "430ea480cb07e2a264f2edb374bd05c75f1b76e3" }
