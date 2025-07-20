@@ -16,15 +16,12 @@ exclude = ["/.github", "./examples/web/"]
 stackbox = "0.2"
 egui = { version = "0.32", default-features = false }
 log = { version = "0.4", default-features = false }
-taffy = { version = "0.7.5", default-features = false, features = [
+taffy = { version = "0.7.7", default-features = false, features = [
   "taffy_tree",
   "detailed_layout_info",
 ] }
 parking_lot = { version = "0.12", features = ["arc_lock"] }
 tracing = { version = "0.1", optional = true }
-
-# remove this when possible, see https://github.com/emilk/egui/issues/7342#issuecomment-3064964374 and
-wgpu = "25"
 
 [features]
 default = ["taffy_default"]
@@ -39,6 +36,8 @@ taffy_default = [
 tracing = ["dep:tracing"]
 
 [dev-dependencies]
+wgpu = "25" # enables the wgpu default features so we get the default backends
+
 eframe = { version = "0.32", default-features = false, features = [
   "accesskit",
   "default_fonts",
@@ -49,5 +48,5 @@ eframe = { version = "0.32", default-features = false, features = [
 ] }
 
 [patch.crates-io]
-# Taffy improvements that have not been released yet
-taffy = { git = "https://github.com/PPakalns/taffy", rev = "430ea480cb07e2a264f2edb374bd05c75f1b76e3" }
+# Taffy improvements that have not been released yet in taffy 0.7
+# taffy = { git = "https://github.com/PPakalns/taffy", rev = "430ea480cb07e2a264f2edb374bd05c75f1b76e3" }

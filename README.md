@@ -17,15 +17,15 @@ This library is in active development and some breaking changes are expected, bu
 
 | egui_taffy | egui | taffy | MSRV           |
 |------------|------| ---   |----------------|
-| 0.8        | 0.32 | 0.7.3 | 1.85           |
+| 0.8        | 0.32 | 0.7.7 | 1.85           |
 | 0.7        | 0.31 | 0.7.3 | 1.81           |
 | 0.6        | 0.30 | 0.7.3 | 1.81           |
 | 0.5        | 0.30 | 0.7   | 1.83           |
 | 0.4        | 0.30 | 0.7   | 1.83           |
-| 0.3        | 0.29 | 0.7   | 1.83           | 
-| 0.2        | 0.29 | 0.7   | 1.83           | 
-| 0.1.2      | 0.29 | 0.6   | 1.83           | 
-| 0.1        | 0.29 | 0.6   | 1.83 (nightly) | 
+| 0.3        | 0.29 | 0.7   | 1.83           |
+| 0.2        | 0.29 | 0.7   | 1.83           |
+| 0.1.2      | 0.29 | 0.6   | 1.83           |
+| 0.1        | 0.29 | 0.6   | 1.83 (nightly) |
 
 To use add `egui_taffy` to your project dependencies in `Cargo.toml` file.
 
