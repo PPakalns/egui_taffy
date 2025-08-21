@@ -30,6 +30,7 @@ pub struct State {
     show_grid_sticky_demo: bool,
     show_virtual_grid_demo: bool,
     show_background_demo: bool,
+    show_holy_grail_demo: bool,
 }
 
 impl App for MyApp {
@@ -69,6 +70,8 @@ impl App for MyApp {
         virtual_grid_demo(ctx, state);
 
         background_demo(ctx, state);
+
+        holy_grail_demo(ctx, state);
     }
 }
 
@@ -106,6 +109,7 @@ fn ui_side_panel(ctx: &egui::Context, state: &mut State) {
                     ),
                     ("Virtual grid row demo", &mut state.show_virtual_grid_demo),
                     ("Background demo", &mut state.show_background_demo),
+                    ("Holy grail demo", &mut state.show_holy_grail_demo),
                 ] {
                     if tui
                         .style(taffy::Style {
@@ -1065,6 +1069,114 @@ fn background_demo(ctx: &egui::Context, state: &mut State) {
                         });
                     });
                 })
+        });
+}
+
+fn holy_grail_demo(ctx: &egui::Context, state: &mut State) {
+    egui::Window::new("holy grail demo")
+        .open(&mut state.show_holy_grail_demo)
+        .default_width(500.)
+        .show(ctx, |ui| {
+            tui(ui, ui.id().with("holy_grail"))
+                .reserve_available_space()
+                .style(taffy::Style {
+                    display: taffy::Display::Grid,
+                    size: taffy::Size {
+                        width: percent(1.),
+                        height: percent(1.),
+                    },
+                    grid_template_columns: vec![length(100.), fr(1.), length(100.)],
+                    grid_template_rows: vec![length(100.), fr(1.), length(100.)],
+                    ..Default::default()
+                })
+                .show(|tui| {
+                    let style = tui.egui_style_mut();
+                    style.visuals.widgets.noninteractive.corner_radius = egui::CornerRadius::ZERO;
+
+                    let header = Style {
+                        grid_row: style_helpers::line(1),
+                        grid_column: span(3),
+                        display: taffy::Display::Flex,
+                        justify_content: Some(taffy::JustifyContent::Center),
+                        align_items: Some(taffy::AlignItems::Center),
+
+                        ..Default::default()
+                    };
+                    let left_sidebar = Style {
+                        grid_row: style_helpers::line(2),
+                        grid_column: style_helpers::line(1),
+                        display: taffy::Display::Flex,
+                        justify_content: Some(taffy::JustifyContent::Center),
+                        align_items: Some(taffy::AlignItems::Center),
+                        ..Default::default()
+                    };
+                    let content_area = Style {
+                        grid_row: style_helpers::line(2),
+                        grid_column: style_helpers::line(2),
+                        display: taffy::Display::Flex,
+                        justify_content: Some(taffy::JustifyContent::Center),
+                        align_items: Some(taffy::AlignItems::Center),
+                        ..Default::default()
+                    };
+                    let right_sidebar = Style {
+                        grid_row: style_helpers::line(2),
+                        grid_column: style_helpers::line(3),
+                        display: taffy::Display::Flex,
+                        justify_content: Some(taffy::JustifyContent::Center),
+                        align_items: Some(taffy::AlignItems::Center),
+                        ..Default::default()
+                    };
+                    let footer = Style {
+                        grid_row: style_helpers::line(3),
+                        grid_column: span(3),
+                        display: taffy::Display::Flex,
+                        justify_content: Some(taffy::JustifyContent::Center),
+                        align_items: Some(taffy::AlignItems::Center),
+                        ..Default::default()
+                    };
+
+                    tui.style(header).add_with_background_color(
+                        |tui| {
+                            tui.ui(|ui| {
+                                ui.colored_label(egui::Color32::GRAY, "header");
+                            });
+                        },
+                        egui::Color32::WHITE,
+                    );
+
+                    tui.style(left_sidebar).add_with_background_color(
+                        |tui| {
+                            tui.ui(|ui| {
+                                ui.colored_label(egui::Color32::WHITE, "left");
+                            });
+                        },
+                        egui::Color32::ORANGE,
+                    );
+
+                    tui.style(content_area).add_with_background(|tui| {
+                        tui.ui(|ui| {
+                            ui.colored_label(egui::Color32::WHITE, "content");
+                        });
+                    });
+
+                    tui.style(right_sidebar).add_with_background_color(
+                        |tui| {
+                            tui.ui(|ui| {
+                                ui.colored_label(egui::Color32::WHITE, "right");
+                            });
+                        },
+                        egui::Color32::MAGENTA,
+                    );
+
+                    tui.style(footer).add_with_background_color(
+                        |tui| {
+                            tui.ui(|ui| {
+                                ui.colored_label(egui::Color32::WHITE, "footer");
+                            });
+                        },
+                        egui::Color32::GRAY,
+                    );
+                });
         });
 }
 
