@@ -1756,7 +1756,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     /// Use this function if you want to have full control of [`TuiBackground`] values
     #[must_use = "You should check if the user clicked this with `if ….clicked() { … } "]
     #[inline]
-    fn clickable_ext<T>(
+    fn clickable_with_background_ext<T>(
         self,
         background: TuiBackground,
         f: impl FnOnce(&mut Tui) -> T,
@@ -1786,7 +1786,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     /// Use `clickable_ext` to style background and / or borders
     #[must_use = "You should check if the user clicked this with `if ….clicked() { … } "]
     fn clickable<T>(self, f: impl FnOnce(&mut Tui) -> T) -> TuiInnerResponse<T> {
-        self.clickable_ext(
+        self.clickable_with_background_ext(
             TuiBackground::new().with_background_color(egui::Color32::TRANSPARENT),
             f,
         )
@@ -1813,7 +1813,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
             .with_border()
             .with_background_color_by_visuals(background_color);
 
-        self.clickable_ext(background, f)
+        self.clickable_with_background_ext(background, f)
     }
 
     /// Add tui node with background that acts as egui button
@@ -1842,7 +1842,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
             .with_border()
             .with_background_color_by_response(background_color);
 
-        self.clickable_ext(background, f)
+        self.clickable_with_background_ext(background, f)
     }
 
     /// Add tui node as children to this node and draw custom background

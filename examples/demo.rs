@@ -984,71 +984,74 @@ fn background_demo(ctx: &egui::Context, state: &mut State) {
                                 params.selected = !params.selected;
                             }
 
-                            let response = tui.style(box_style.clone()).clickable_ext(
-                                TuiBackground::new()
-                                    .with_background_color(egui::Color32::TRANSPARENT),
-                                |tui| {
-                                    tui.colored_label(
-                                        egui::Color32::WHITE,
-                                        "ext clickable transparent".to_uppercase(),
-                                    );
-                                },
-                            );
+                            let response =
+                                tui.style(box_style.clone()).clickable_with_background_ext(
+                                    TuiBackground::new()
+                                        .with_background_color(egui::Color32::TRANSPARENT),
+                                    |tui| {
+                                        tui.colored_label(
+                                            egui::Color32::WHITE,
+                                            "ext clickable transparent".to_uppercase(),
+                                        );
+                                    },
+                                );
 
                             if response.clicked() {
                                 params.counter += 1;
                             }
 
-                            let response = tui.style(box_style.clone()).clickable_ext(
-                                TuiBackground::new()
-                                    .with_border()
-                                    .with_border_width_by_response(Rc::new({
-                                        move |_, _, response| {
-                                            if response.hovered() { 10. } else { 2. }
-                                        }
-                                    }))
-                                    .with_corner_radius(20),
-                                |tui| {
-                                    tui.colored_label(
-                                        egui::Color32::WHITE,
-                                        "ext clickable".to_uppercase(),
-                                    );
-                                },
-                            );
-
-                            if response.clicked() {
-                                params.counter += 1;
-                            }
-
-                            let response = tui.style(box_style.clone()).clickable_ext(
-                                TuiBackground::new()
-                                    .with_background_color(if params.selected {
-                                        egui::Color32::GRAY
-                                    } else {
-                                        egui::Color32::LIGHT_GRAY
-                                    })
-                                    .with_border_color_by_response(Rc::new({
-                                        move |_, _, response| {
-                                            if response.hovered() {
-                                                egui::Color32::DARK_GRAY
-                                            } else {
-                                                egui::Color32::WHITE
+                            let response =
+                                tui.style(box_style.clone()).clickable_with_background_ext(
+                                    TuiBackground::new()
+                                        .with_border()
+                                        .with_border_width_by_response(Rc::new({
+                                            move |_, _, response| {
+                                                if response.hovered() { 10. } else { 2. }
                                             }
-                                        }
-                                    }))
-                                    .with_border_width_by_response(Rc::new({
-                                        move |_, _, response| {
-                                            if response.hovered() { 10. } else { 20. }
-                                        }
-                                    }))
-                                    .with_corner_radius(200),
-                                |tui| {
-                                    tui.colored_label(
-                                        egui::Color32::BLACK,
-                                        format!("ext {label_selectable}").to_uppercase(),
-                                    );
-                                },
-                            );
+                                        }))
+                                        .with_corner_radius(20),
+                                    |tui| {
+                                        tui.colored_label(
+                                            egui::Color32::WHITE,
+                                            "ext clickable".to_uppercase(),
+                                        );
+                                    },
+                                );
+
+                            if response.clicked() {
+                                params.counter += 1;
+                            }
+
+                            let response =
+                                tui.style(box_style.clone()).clickable_with_background_ext(
+                                    TuiBackground::new()
+                                        .with_background_color(if params.selected {
+                                            egui::Color32::GRAY
+                                        } else {
+                                            egui::Color32::LIGHT_GRAY
+                                        })
+                                        .with_border_color_by_response(Rc::new({
+                                            move |_, _, response| {
+                                                if response.hovered() {
+                                                    egui::Color32::DARK_GRAY
+                                                } else {
+                                                    egui::Color32::WHITE
+                                                }
+                                            }
+                                        }))
+                                        .with_border_width_by_response(Rc::new({
+                                            move |_, _, response| {
+                                                if response.hovered() { 10. } else { 20. }
+                                            }
+                                        }))
+                                        .with_corner_radius(200),
+                                    |tui| {
+                                        tui.colored_label(
+                                            egui::Color32::BLACK,
+                                            format!("ext {label_selectable}").to_uppercase(),
+                                        );
+                                    },
+                                );
 
                             if response.clicked() {
                                 params.selected = !params.selected;
