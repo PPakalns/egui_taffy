@@ -1690,8 +1690,8 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     #[inline]
     fn add_with_background_color<T>(
         self,
-        f: impl FnOnce(&mut Tui) -> T,
         background_color: egui::Color32,
+        f: impl FnOnce(&mut Tui) -> T,
     ) -> T {
         let tui = self.tui();
         let return_values = tui.add_with_background_ui(
@@ -1742,8 +1742,8 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     #[inline]
     fn add_with_background_ext<T>(
         self,
-        f: impl FnOnce(&mut Tui) -> T,
         background: TuiBackground,
+        f: impl FnOnce(&mut Tui) -> T,
     ) -> T {
         let tui = self.tui();
         tui.tui
@@ -1758,8 +1758,8 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     #[inline]
     fn clickable_ext<T>(
         self,
-        f: impl FnOnce(&mut Tui) -> T,
         background: TuiBackground,
+        f: impl FnOnce(&mut Tui) -> T,
     ) -> TuiInnerResponse<T> {
         let tui = if background.has_border() {
             self.with_border_style_from_egui_style()
@@ -1787,8 +1787,8 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     #[must_use = "You should check if the user clicked this with `if ….clicked() { … } "]
     fn clickable<T>(self, f: impl FnOnce(&mut Tui) -> T) -> TuiInnerResponse<T> {
         self.clickable_ext(
-            f,
             TuiBackground::new().with_background_color(egui::Color32::TRANSPARENT),
+            f,
         )
     }
 
@@ -1813,7 +1813,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
             .with_border()
             .with_background_color_by_visuals(background_color);
 
-        self.clickable_ext(f, background)
+        self.clickable_ext(background, f)
     }
 
     /// Add tui node with background that acts as egui button
@@ -1842,7 +1842,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
             .with_border()
             .with_background_color_by_response(background_color);
 
-        self.clickable_ext(f, background)
+        self.clickable_ext(background, f)
     }
 
     /// Add tui node as children to this node and draw custom background

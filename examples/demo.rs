@@ -894,6 +894,7 @@ fn background_demo(ctx: &egui::Context, state: &mut State) {
                     tui.add(|tui| tui.heading("backgrounds".to_uppercase()));
 
                     tui.style(row_style.clone()).add_with_background_color(
+                        egui::Color32::BLACK,
                         |tui| {
                             tui.style(box_style.clone()).add_with_background(|tui| {
                                 tui.colored_label(
@@ -911,53 +912,52 @@ fn background_demo(ctx: &egui::Context, state: &mut State) {
                                 });
 
                             tui.style(box_style.clone()).add_with_background_color(
+                                egui::Color32::TRANSPARENT,
                                 |tui| {
                                     tui.colored_label(
                                         egui::Color32::WHITE,
                                         "bg transparent".to_uppercase(),
                                     );
                                 },
-                                egui::Color32::TRANSPARENT,
                             );
 
                             tui.style(box_style.clone()).add_with_background_color(
+                                egui::Color32::DARK_GRAY,
                                 |tui| {
                                     tui.colored_label(
                                         egui::Color32::WHITE,
                                         "bg custom".to_uppercase(),
                                     );
                                 },
-                                egui::Color32::DARK_GRAY,
                             );
 
                             tui.style(box_style.clone()).add_with_background_ext(
-                                |tui| {
-                                    tui.colored_label(egui::Color32::BLACK, "ext 1".to_uppercase());
-                                },
                                 TuiBackground::new()
                                     .with_background_color(egui::Color32::LIGHT_GRAY)
                                     .with_border_color(egui::Color32::WHITE)
                                     .with_border_width(20.)
                                     .with_corner_radius(egui::CornerRadius::from(40.)),
+                                |tui| {
+                                    tui.colored_label(egui::Color32::BLACK, "ext 1".to_uppercase());
+                                },
                             );
 
                             tui.style(box_style.clone()).add_with_background_ext(
-                                |tui| {
-                                    tui.colored_label(egui::Color32::WHITE, "ext 2".to_uppercase());
-                                },
                                 TuiBackground::new()
                                     .with_border()
                                     .with_border_width(40.)
                                     .with_corner_radius(200),
+                                |tui| {
+                                    tui.colored_label(egui::Color32::WHITE, "ext 2".to_uppercase());
+                                },
                             );
                         },
-                        egui::Color32::BLACK,
                     );
 
                     tui.add(|tui| tui.heading("buttons".to_uppercase()));
 
-                    tui.style(row_style).add_with_background_color(
-                        |tui| {
+                    tui.style(row_style)
+                        .add_with_background_color(egui::Color32::BLACK, |tui| {
                             let response = tui.style(box_style.clone()).button(|tui| {
                                 tui.colored_label(egui::Color32::WHITE, "button".to_uppercase());
                             });
@@ -985,14 +985,14 @@ fn background_demo(ctx: &egui::Context, state: &mut State) {
                             }
 
                             let response = tui.style(box_style.clone()).clickable_ext(
+                                TuiBackground::new()
+                                    .with_background_color(egui::Color32::TRANSPARENT),
                                 |tui| {
                                     tui.colored_label(
                                         egui::Color32::WHITE,
                                         "ext clickable transparent".to_uppercase(),
                                     );
                                 },
-                                TuiBackground::new()
-                                    .with_background_color(egui::Color32::TRANSPARENT),
                             );
 
                             if response.clicked() {
@@ -1000,12 +1000,6 @@ fn background_demo(ctx: &egui::Context, state: &mut State) {
                             }
 
                             let response = tui.style(box_style.clone()).clickable_ext(
-                                |tui| {
-                                    tui.colored_label(
-                                        egui::Color32::WHITE,
-                                        "ext clickable".to_uppercase(),
-                                    );
-                                },
                                 TuiBackground::new()
                                     .with_border()
                                     .with_border_width_by_response(Rc::new({
@@ -1014,6 +1008,12 @@ fn background_demo(ctx: &egui::Context, state: &mut State) {
                                         }
                                     }))
                                     .with_corner_radius(20),
+                                |tui| {
+                                    tui.colored_label(
+                                        egui::Color32::WHITE,
+                                        "ext clickable".to_uppercase(),
+                                    );
+                                },
                             );
 
                             if response.clicked() {
@@ -1021,12 +1021,6 @@ fn background_demo(ctx: &egui::Context, state: &mut State) {
                             }
 
                             let response = tui.style(box_style.clone()).clickable_ext(
-                                |tui| {
-                                    tui.colored_label(
-                                        egui::Color32::BLACK,
-                                        format!("ext {label_selectable}").to_uppercase(),
-                                    );
-                                },
                                 TuiBackground::new()
                                     .with_background_color(if params.selected {
                                         egui::Color32::GRAY
@@ -1048,14 +1042,18 @@ fn background_demo(ctx: &egui::Context, state: &mut State) {
                                         }
                                     }))
                                     .with_corner_radius(200),
+                                |tui| {
+                                    tui.colored_label(
+                                        egui::Color32::BLACK,
+                                        format!("ext {label_selectable}").to_uppercase(),
+                                    );
+                                },
                             );
 
                             if response.clicked() {
                                 params.selected = !params.selected;
                             }
-                        },
-                        egui::Color32::BLACK,
-                    );
+                        });
                     tui.style(taffy::Style {
                         flex_direction: taffy::FlexDirection::Row,
                         gap: length(20.),
@@ -1135,22 +1133,20 @@ fn holy_grail_demo(ctx: &egui::Context, state: &mut State) {
                         ..Default::default()
                     };
 
-                    tui.style(header).add_with_background_color(
-                        |tui| {
+                    tui.style(header)
+                        .add_with_background_color(egui::Color32::WHITE, |tui| {
                             tui.ui(|ui| {
                                 ui.colored_label(egui::Color32::GRAY, "header");
                             });
-                        },
-                        egui::Color32::WHITE,
-                    );
+                        });
 
                     tui.style(left_sidebar).add_with_background_color(
+                        egui::Color32::ORANGE,
                         |tui| {
                             tui.ui(|ui| {
                                 ui.colored_label(egui::Color32::WHITE, "left");
                             });
                         },
-                        egui::Color32::ORANGE,
                     );
 
                     tui.style(content_area).add_with_background(|tui| {
@@ -1160,22 +1156,20 @@ fn holy_grail_demo(ctx: &egui::Context, state: &mut State) {
                     });
 
                     tui.style(right_sidebar).add_with_background_color(
+                        egui::Color32::MAGENTA,
                         |tui| {
                             tui.ui(|ui| {
                                 ui.colored_label(egui::Color32::WHITE, "right");
                             });
                         },
-                        egui::Color32::MAGENTA,
                     );
 
-                    tui.style(footer).add_with_background_color(
-                        |tui| {
+                    tui.style(footer)
+                        .add_with_background_color(egui::Color32::GRAY, |tui| {
                             tui.ui(|ui| {
                                 ui.colored_label(egui::Color32::WHITE, "footer");
                             });
-                        },
-                        egui::Color32::GRAY,
-                    );
+                        });
                 });
         });
 }
