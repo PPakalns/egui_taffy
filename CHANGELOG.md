@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1
+
+- Fix required space calculations for text. Egui inside intrinsic size doesn't take into account text wrapping (multiple rows).
+
 ## 0.8.0
 
 - Support egui 0.32
