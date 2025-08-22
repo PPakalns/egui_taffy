@@ -3,6 +3,7 @@
 ## 0.8.1
 
 - Fix required space calculations for text. Egui inside intrinsic size doesn't take into account text wrapping (multiple rows).
+- Add option to change auto id generation prefix for UI nodes.
 
 ## 0.8.0
 

@@ -153,6 +153,8 @@ pub struct Tui {
 
     ui: egui::Ui,
 
+    current_auto_id_prefix: egui::Id,
+
     current_id: egui::Id,
     current_node: Option<NodeId>,
     current_node_index: usize,
@@ -211,6 +213,9 @@ impl Tui {
 
         let mut this = Self {
             main_id: id,
+
+            current_auto_id_prefix: egui::Id::new("taffy_auto_id_"),
+
             ui,
             current_node: None,
             current_node_index: 0,
@@ -846,6 +851,28 @@ impl Tui {
         self.current_id
     }
 
+    /// Current Tui auto id prefix (used to generate unique ids)
+    #[inline]
+    pub fn current_auto_id_prefix(&self) -> egui::Id {
+        self.current_auto_id_prefix
+    }
+
+    /// Current Tui auto id prefix (used to generate unique ids for added ui nodes)
+    ///
+    /// Useful to set different auto id generation pattern, if UI content changes.
+    /// This helps to layout new UI fully separately from old layout.
+    /// (Historical spacing does not impact new element spacing)
+    #[inline]
+    pub fn with_auto_id_prefix<F, R>(&mut self, mut id: egui::Id, f: F) -> R
+    where
+        F: FnOnce(&mut Tui) -> R,
+    {
+        std::mem::swap(&mut self.current_auto_id_prefix, &mut id);
+        let resp = f(self);
+        std::mem::swap(&mut self.current_auto_id_prefix, &mut id);
+        resp
+    }
+
     /// Last viewport rect (Full tui layout or last scrollable element)
     #[inline]
     pub fn current_viewport(&self) -> egui::Rect {
@@ -1097,7 +1124,10 @@ impl TuiId {
         match self {
             TuiId::Hiarchy(id) => tui.current_id.with(id),
             TuiId::Unique(id) => id,
-            TuiId::Auto => tui.current_id.with("auto").with(tui.current_node_index),
+            TuiId::Auto => tui
+                .current_id
+                .with(tui.current_auto_id_prefix)
+                .with(tui.current_node_index),
         }
     }
 }
@@ -1445,13 +1475,12 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     fn with_border_style_from_egui_style(self) -> TuiBuilder<'r> {
         let tui = self.tui();
         let border = tui.tui.egui_ui().style().noninteractive().bg_stroke.width;
-        let tui = tui.mut_style(|style| {
+        tui.mut_style(|style| {
             // Allocate space for border in layout
             if style.border == Rect::zero() {
                 style.border = length(border);
             }
-        });
-        tui
+        })
     }
 
     /// Add tui node as children to this node and draw simple group Frame background
