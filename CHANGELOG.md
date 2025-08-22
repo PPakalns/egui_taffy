@@ -2,8 +2,11 @@
 
 ## 0.8.1
 
-- Fix required space calculations for text. Egui inside intrinsic size doesn't take into account text wrapping (multiple rows).
-- Add option to change auto id generation prefix for UI nodes.
+- Fix text layout problems where wrapped text height was not taken into account.
+- Add method to change auto id generation prefix for UI nodes. 
+
+  Useful in cases when UI node childrens can change and their layouting shouldn't
+  reuse previously added UI node layouting state.
 
 ## 0.8.0
 
