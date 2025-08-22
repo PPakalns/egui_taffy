@@ -4,7 +4,6 @@
 
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
-use std::rc::Rc;
 use std::sync::Arc;
 
 use egui::style::{Visuals, WidgetVisuals};
@@ -1254,13 +1253,12 @@ where
 }
 
 /// Getter function to get values defined by [`egui::style::Visuals`] and [`egui::style::WidgetVisuals`]
-type VisualsGetterFn<T> = Rc<dyn Fn(&Visuals, &WidgetVisuals) -> T>;
+type VisualsGetterFn<T> = Box<dyn Fn(&Visuals, &WidgetVisuals) -> T>;
 /// Getter function to get values defined by [`egui::style::Visuals`] and [`egui::style::WidgetVisuals`]
 /// It includes a reference to [`egui::Response`] to handle widget states
-type VisualsResponseGetterFn<T> = Rc<dyn Fn(&Visuals, &WidgetVisuals, &Response) -> T>;
+type VisualsResponseGetterFn<T> = Box<dyn Fn(&Visuals, &WidgetVisuals, &Response) -> T>;
 
 /// Generic structure of values to draw a background by [`TuiBackground`]
-#[derive(Clone)]
 enum TuiBackgroundValue<T> {
     /// Custom value
     Custom(T),
@@ -1270,7 +1268,6 @@ enum TuiBackgroundValue<T> {
     VisualsResponse(VisualsResponseGetterFn<T>),
 }
 
-#[derive(Clone)]
 struct TuiBackgroundBorder {
     color: TuiBackgroundValue<egui::Color32>,
     width: TuiBackgroundValue<f32>,
@@ -1279,10 +1276,10 @@ struct TuiBackgroundBorder {
 impl Default for TuiBackgroundBorder {
     fn default() -> Self {
         Self {
-            color: TuiBackgroundValue::Visuals(Rc::new(|_, widget_visuals| {
+            color: TuiBackgroundValue::Visuals(Box::new(|_, widget_visuals| {
                 widget_visuals.bg_stroke.color
             })),
-            width: TuiBackgroundValue::Visuals(Rc::new(|_, widget_visuals| {
+            width: TuiBackgroundValue::Visuals(Box::new(|_, widget_visuals| {
                 widget_visuals.bg_stroke.width
             })),
         }
@@ -1290,7 +1287,6 @@ impl Default for TuiBackgroundBorder {
 }
 
 /// Helper to draw background fills and borders
-#[derive(Clone)]
 pub struct TuiBackground {
     background_color: TuiBackgroundValue<egui::Color32>,
     corner_radius: TuiBackgroundValue<egui::CornerRadius>,
@@ -1300,8 +1296,8 @@ pub struct TuiBackground {
 impl Default for TuiBackground {
     fn default() -> Self {
         Self {
-            background_color: TuiBackgroundValue::Visuals(Rc::new(|visuals, _| visuals.panel_fill)),
-            corner_radius: TuiBackgroundValue::Visuals(Rc::new(|_, widget_visuals| {
+            background_color: TuiBackgroundValue::Visuals(Box::new(|visuals, _| visuals.panel_fill)),
+            corner_radius: TuiBackgroundValue::Visuals(Box::new(|_, widget_visuals| {
                 widget_visuals.corner_radius
             })),
             border: None,
@@ -1802,9 +1798,9 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     ) -> TuiInnerResponse<T> {
         let background_color: VisualsGetterFn<egui::Color32> = match target_tint_color {
             None => {
-                Rc::new(|_: &Visuals, widget_visuals: &WidgetVisuals| widget_visuals.weak_bg_fill)
+                Box::new(|_: &Visuals, widget_visuals: &WidgetVisuals| widget_visuals.weak_bg_fill)
             }
-            Some(tint_color) => Rc::new(move |_: &Visuals, widget_visuals: &WidgetVisuals| {
+            Some(tint_color) => Box::new(move |_: &Visuals, widget_visuals: &WidgetVisuals| {
                 egui::ecolor::tint_color_towards(widget_visuals.weak_bg_fill, tint_color)
             }),
         };
@@ -1827,7 +1823,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     #[must_use = "You should check if the user clicked this with `if ….clicked() { … } "]
     #[inline]
     fn selectable<T>(self, selected: bool, f: impl FnOnce(&mut Tui) -> T) -> TuiInnerResponse<T> {
-        let background_color = Rc::new(
+        let background_color = Box::new(
             move |visuals: &Visuals, widget_visuals: &WidgetVisuals, response: &Response| {
                 if response.hovered() && selected {
                     // Add visual effect even if button is selected

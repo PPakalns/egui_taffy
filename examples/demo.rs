@@ -5,7 +5,6 @@ use egui_taffy::{
     TuiBuilderLogic, taffy, tid, tui,
     virtual_tui::{VirtualGridRowHelper, VirtualGridRowHelperParams},
 };
-use std::rc::Rc;
 use taffy::{
     Style,
     prelude::{auto, fr, length, min_content, percent, repeat, span},
@@ -1004,7 +1003,7 @@ fn background_demo(ctx: &egui::Context, state: &mut State) {
                                 tui.style(box_style.clone()).clickable_with_background_ext(
                                     TuiBackground::new()
                                         .with_border()
-                                        .with_border_width_by_response(Rc::new({
+                                        .with_border_width_by_response(Box::new({
                                             move |_, _, response| {
                                                 if response.hovered() { 10. } else { 2. }
                                             }
@@ -1030,7 +1029,7 @@ fn background_demo(ctx: &egui::Context, state: &mut State) {
                                         } else {
                                             egui::Color32::LIGHT_GRAY
                                         })
-                                        .with_border_color_by_response(Rc::new({
+                                        .with_border_color_by_response(Box::new({
                                             move |_, _, response| {
                                                 if response.hovered() {
                                                     egui::Color32::DARK_GRAY
@@ -1039,7 +1038,7 @@ fn background_demo(ctx: &egui::Context, state: &mut State) {
                                                 }
                                             }
                                         }))
-                                        .with_border_width_by_response(Rc::new({
+                                        .with_border_width_by_response(Box::new({
                                             move |_, _, response| {
                                                 if response.hovered() { 10. } else { 20. }
                                             }
