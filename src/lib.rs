@@ -1205,7 +1205,7 @@ impl TaffyState {
 /// Helper structure to provide more egonomic API for child ui container creation
 #[must_use]
 pub struct TuiBuilder<'r> {
-    tui: &'r mut Tui,
+    builder_tui: &'r mut Tui,
     params: TuiBuilderParams,
 }
 
@@ -1237,7 +1237,7 @@ pub struct TuiBuilderParams {
 impl<'r> TuiBuilder<'r> {
     /// Retrieve underlaying Tui used to initialize child element
     pub fn builder_tui(&self) -> &&'r mut Tui {
-        &self.tui
+        &self.builder_tui
     }
 }
 
@@ -1245,15 +1245,22 @@ impl<'r> TuiBuilder<'r> {
 
 /// Helper trait to reduce code boilerplate
 pub trait AsTuiBuilder<'r>: Sized {
+    /// Associated builder type that will be used to create UI node
+    type Builder: TuiBuilderParamsAccess<'r>
+        + TuiBuilderLogic<'r>
+        + AsTuiBuilder<'r, Builder = Self::Builder>;
+
     /// Initialize creation of tui new child node
-    fn tui(self) -> TuiBuilder<'r>;
+    fn tui(self) -> Self::Builder;
 }
 
 impl<'r> AsTuiBuilder<'r> for &'r mut Tui {
+    type Builder = TuiBuilder<'r>;
+
     #[inline]
-    fn tui(self) -> TuiBuilder<'r> {
+    fn tui(self) -> Self::Builder {
         TuiBuilder {
-            tui: self,
+            builder_tui: self,
             params: TuiBuilderParams {
                 id: TuiId::Auto,
                 style: None,
@@ -1268,8 +1275,10 @@ impl<'r> AsTuiBuilder<'r> for &'r mut Tui {
 }
 
 impl<'r> AsTuiBuilder<'r> for TuiBuilder<'r> {
+    type Builder = Self;
+
     #[inline]
-    fn tui(self) -> TuiBuilder<'r> {
+    fn tui(self) -> Self::Builder {
         self
     }
 }
@@ -1283,61 +1292,93 @@ where
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/// Trait to allow users to override TuiBuilderLogic with their own logic
+/// and to reuse existing logic
+pub trait TuiBuilderParamsAccess<'r> {
+    /// Access parameters for node currently being built
+    fn params_mut(&mut self) -> &mut TuiBuilderParams;
+
+    /// Access current inner Tui used to build new UI node
+    fn builder_tui(&self) -> &Tui;
+
+    /// Unpack parameters to build UI node
+    fn unpack(self) -> TuiBuilder<'r>;
+}
+
+impl<'r> TuiBuilderParamsAccess<'r> for TuiBuilder<'r> {
+    #[inline]
+    fn params_mut(&mut self) -> &mut TuiBuilderParams {
+        &mut self.params
+    }
+
+    #[inline]
+    fn builder_tui(&self) -> &Tui {
+        &self.builder_tui
+    }
+
+    #[inline]
+    fn unpack(self) -> TuiBuilder<'r> {
+        self
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 /// Trait that implements TuiBuilder logic for child node creation in Tui UI.
 pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     /// Override all child element parameters with given values
     #[inline]
-    fn params(self, params: TuiBuilderParams) -> TuiBuilder<'r> {
+    fn params(self, params: TuiBuilderParams) -> Self::Builder {
         let mut tui = self.tui();
-        tui.params = params;
+        *tui.params_mut() = params;
         tui
     }
 
     /// Set child node id
     #[inline]
-    fn id(self, id: impl Into<TuiId>) -> TuiBuilder<'r> {
+    fn id(self, id: impl Into<TuiId>) -> Self::Builder {
         let mut tui = self.tui();
-        tui.params.id = id.into();
+        tui.params_mut().id = id.into();
         tui
     }
 
     /// Set child node style
     #[inline]
-    fn style(self, style: taffy::Style) -> TuiBuilder<'r> {
+    fn style(self, style: taffy::Style) -> Self::Builder {
         let mut tui = self.tui();
-        tui.params.style = Some(style);
+        tui.params_mut().style = Some(style);
         tui
     }
 
     /// Set child node style to be the same as current node style
-    fn reuse_style(self) -> TuiBuilder<'r> {
+    fn reuse_style(self) -> Self::Builder {
         let mut tui = self.tui();
-        tui.params.style = Some(tui.tui.current_style().clone());
+        tui.params_mut().style = Some(tui.builder_tui().current_style().clone());
         tui
     }
 
     /// Set child node id and style
     #[inline]
-    fn id_style(self, id: impl Into<TuiId>, style: taffy::Style) -> TuiBuilder<'r> {
+    fn id_style(self, id: impl Into<TuiId>, style: taffy::Style) -> Self::Builder {
         let mut tui = self.tui();
-        tui.params.id = id.into();
-        tui.params.style = Some(style);
+        tui.params_mut().id = id.into();
+        tui.params_mut().style = Some(style);
         tui
     }
 
     /// Mutate child node style
     #[inline]
-    fn mut_style(self, f: impl FnOnce(&mut taffy::Style)) -> TuiBuilder<'r> {
+    fn mut_style(self, f: impl FnOnce(&mut taffy::Style)) -> Self::Builder {
         let mut tui = self.tui();
-        f(tui.params.style.get_or_insert_with(Default::default));
+        f(tui.params_mut().style.get_or_insert_with(Default::default));
         tui
     }
 
     /// Set child enabled_ui egui flag
     #[inline]
-    fn enabled_ui(self, enabled_ui: bool) -> TuiBuilder<'r> {
+    fn enabled_ui(self, enabled_ui: bool) -> Self::Builder {
         let mut tui = self.tui();
-        tui.params.disabled |= !enabled_ui;
+        tui.params_mut().disabled |= !enabled_ui;
         tui
     }
 
@@ -1345,50 +1386,50 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     ///
     /// See [`egui::Ui::disable`] for more information.
     #[inline]
-    fn disabled(self) -> TuiBuilder<'r> {
+    fn disabled(self) -> Self::Builder {
         let mut tui = self.tui();
-        tui.params.disabled = true;
+        tui.params_mut().disabled = true;
         tui
     }
 
     /// Set child element wrap mode
     #[inline]
-    fn wrap_mode(self, wrap_mode: egui::TextWrapMode) -> TuiBuilder<'r> {
+    fn wrap_mode(self, wrap_mode: egui::TextWrapMode) -> Self::Builder {
         let mut tui = self.tui();
-        tui.params.wrap_mode = Some(wrap_mode);
+        tui.params_mut().wrap_mode = Some(wrap_mode);
         tui
     }
 
     /// Set child element egui style
     #[inline]
-    fn egui_style(self, style: Arc<egui::Style>) -> TuiBuilder<'r> {
+    fn egui_style(self, style: Arc<egui::Style>) -> Self::Builder {
         let mut tui = self.tui();
-        tui.params.egui_style = Some(style);
+        tui.params_mut().egui_style = Some(style);
         tui
     }
 
     /// Mutate child element egui style
     #[inline]
-    fn mut_egui_style(self, f: impl FnOnce(&mut egui::Style)) -> TuiBuilder<'r> {
+    fn mut_egui_style(self, f: impl FnOnce(&mut egui::Style)) -> Self::Builder {
         let mut tui = self.tui();
 
         // Unpack style efficiently
-        let mut style = if let Some(style) = tui.params.egui_style {
+        let mut style = if let Some(style) = tui.params_mut().egui_style.take() {
             Arc::unwrap_or_clone(style)
         } else {
             tui.builder_tui().egui_ui().style().deref().clone()
         };
         f(&mut style);
 
-        tui.params.egui_style = Some(Arc::new(style));
+        tui.params_mut().egui_style = Some(Arc::new(style));
         tui
     }
 
     /// Set child element egui layout
     #[inline]
-    fn egui_layout(self, layout: egui::Layout) -> TuiBuilder<'r> {
+    fn egui_layout(self, layout: egui::Layout) -> Self::Builder {
         let mut tui = self.tui();
-        tui.params.layout = Some(layout);
+        tui.params_mut().layout = Some(layout);
         tui
     }
 
@@ -1397,17 +1438,19 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     /// Element position in specified dimensions will not be affected by ancestore `overflow: scroll` element
     /// scroll offset in specified dimension.
     #[inline]
-    fn sticky(self, sticky: egui::Vec2b) -> TuiBuilder<'r> {
+    fn sticky(self, sticky: egui::Vec2b) -> Self::Builder {
         let mut tui = self.tui();
-        tui.params.sticky = sticky;
+        tui.params_mut().sticky = sticky;
         tui
     }
 
     /// Add tui node as children to this node
     #[inline]
     fn add<T>(self, f: impl FnOnce(&mut Tui) -> T) -> T {
-        let tui = self.tui();
-        tui.tui.add_child(tui.params, (), |tui, _| f(tui)).main
+        let tui = self.tui().unpack();
+        tui.builder_tui
+            .add_child(tui.params, (), |tui, _| f(tui))
+            .main
     }
 
     /// Add empty tui node as children to this node
@@ -1415,7 +1458,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     /// Useful to fill grid cells with empty content
     #[inline]
     fn add_empty(self) {
-        self.tui().add(|_| {})
+        self.add(|_| {})
     }
 
     /// Add tui node as children to this node and draw only background color
@@ -1472,9 +1515,16 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     /// To correctly layout element with border,
     /// set taffy style border size parameter
     /// from egui noninteractive widget visual bg_stroke width.
-    fn with_border_style_from_egui_style(self) -> TuiBuilder<'r> {
+    fn with_border_style_from_egui_style(self) -> Self::Builder {
         let tui = self.tui();
-        let border = tui.tui.egui_ui().style().noninteractive().bg_stroke.width;
+        let border = tui
+            .builder_tui()
+            .egui_ui()
+            .style()
+            .noninteractive()
+            .bg_stroke
+            .width;
+
         tui.mut_style(|style| {
             // Allocate space for border in layout
             if style.border == Rect::zero() {
@@ -1509,19 +1559,19 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     /// Add tui node with background that acts egui Collapsing header
     #[must_use = "You should check if the user clicked this with `if ….clicked() { … } "]
     fn clickable<T>(self, f: impl FnOnce(&mut Tui) -> T) -> TuiInnerResponse<T> {
-        let tui = self.tui();
+        let tui = self.tui().unpack();
 
         fn background(ui: &mut egui::Ui, container: &TaffyContainerUi) -> Response {
             let rect = container.full_container();
             ui.interact(rect, ui.id().with("bg"), egui::Sense::click())
         }
 
-        let return_values = tui
-            .tui
-            .add_child(tui.params, background, |tui, bg_response| {
-                setup_tui_visuals(tui, bg_response);
-                f(tui)
-            });
+        let return_values =
+            tui.builder_tui
+                .add_child(tui.params, background, |tui, bg_response| {
+                    setup_tui_visuals(tui, bg_response);
+                    f(tui)
+                });
 
         TuiInnerResponse {
             inner: return_values.main,
@@ -1537,7 +1587,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
         target_tint_color: Option<egui::Color32>,
         f: impl FnOnce(&mut Tui) -> T,
     ) -> TuiInnerResponse<T> {
-        let tui = self.with_border_style_from_egui_style();
+        let tui = self.with_border_style_from_egui_style().unpack();
 
         fn background(
             ui: &mut egui::Ui,
@@ -1565,7 +1615,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
             response
         }
 
-        let return_values = tui.tui.add_child(
+        let return_values = tui.builder_tui.add_child(
             tui.params,
             |ui: &mut egui::Ui, container: &TaffyContainerUi| {
                 background(ui, container, target_tint_color)
@@ -1594,7 +1644,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     #[must_use = "You should check if the user clicked this with `if ….clicked() { … } "]
     #[inline]
     fn selectable<T>(self, selected: bool, f: impl FnOnce(&mut Tui) -> T) -> TuiInnerResponse<T> {
-        let tui = self.with_border_style_from_egui_style();
+        let tui = self.with_border_style_from_egui_style().unpack();
 
         fn background(ui: &mut egui::Ui, container: &TaffyContainerUi, selected: bool) -> Response {
             let rect = container.full_container();
@@ -1619,7 +1669,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
             response
         }
 
-        let return_values = tui.tui.add_child(
+        let return_values = tui.builder_tui.add_child(
             tui.params,
             |ui: &mut egui::Ui, container: &TaffyContainerUi| background(ui, container, selected),
             |tui, bg_response| {
@@ -1643,8 +1693,8 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
         content: impl FnOnce(&mut egui::Ui, &TaffyContainerUi) -> BR,
         f: impl FnOnce(&mut Tui, &mut BR) -> FR,
     ) -> TaffyMainBackgroundReturnValues<FR, BR> {
-        let tui = self.tui();
-        tui.tui.add_child(tui.params, content, f)
+        let tui = self.tui().unpack();
+        tui.builder_tui.add_child(tui.params, content, f)
     }
 
     /// Add scroll area egui Ui
@@ -1682,8 +1732,8 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     ///
     /// Alternative: Using `overflow: Scroll` scroll area will be directly inserted in taffy layout.
     fn ui_scroll_area<T>(self, content: impl FnOnce(&mut Ui) -> T) -> T {
-        let tui = self.tui();
-        let limit = tui.tui.limit_scroll_area_size;
+        let tui = self.tui().unpack();
+        let limit = tui.builder_tui.limit_scroll_area_size;
         tui.ui_scroll_area_ext(limit, content)
     }
 
@@ -1691,8 +1741,9 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     ///
     /// Alternative: Using `overflow: Scroll` scroll area will be directly inserted in taffy layout.
     fn ui_scroll_area_ext<T>(self, limit: Option<f32>, content: impl FnOnce(&mut Ui) -> T) -> T {
-        let tui = self.tui();
-        tui.tui.ui_scroll_area_ext(tui.params, limit, content)
+        let tui = self.tui().unpack();
+        tui.builder_tui
+            .ui_scroll_area_ext(tui.params, limit, content)
     }
 
     /// Add egui ui as tui leaf node
@@ -1740,14 +1791,14 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
         self,
         content: impl FnOnce(&mut Ui, &TaffyContainerUi) -> TuiContainerResponse<T>,
     ) -> T {
-        let tui = self.tui();
-        tui.tui.add_container(tui.params, content)
+        let tui = self.tui().unpack();
+        tui.builder_tui.add_container(tui.params, content)
     }
 
     /// Add tui or egui widget that implements [`TuiWidget`]` as leaf node
     #[inline]
     fn ui_add<T: TuiWidget>(self, widget: T) -> T::Response {
-        widget.taffy_ui(self.tui())
+        widget.taffy_ui(self.tui().unpack())
     }
 
     /// Add egui widget as leaf node and modify calculated used space information
@@ -1780,31 +1831,31 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     /// Add egui label as child node
     #[inline]
     fn label(self, text: impl Into<egui::WidgetText>) -> Response {
-        egui::Label::new(text).taffy_ui(self.tui())
+        egui::Label::new(text).taffy_ui(self.tui().unpack())
     }
 
     /// Add egui colored label as child node
     #[inline]
     fn colored_label(self, color: egui::Color32, text: impl Into<egui::RichText>) -> Response {
-        egui::Label::new(text.into().color(color)).taffy_ui(self.tui())
+        egui::Label::new(text.into().color(color)).taffy_ui(self.tui().unpack())
     }
 
     /// Add label as child node with strong visual formatting
     #[inline]
     fn strong(self, text: impl Into<egui::RichText>) -> Response {
-        egui::Label::new(text.into().strong()).taffy_ui(self.tui())
+        egui::Label::new(text.into().strong()).taffy_ui(self.tui().unpack())
     }
 
     /// Add egui heading as child node
     #[inline]
     fn heading(self, text: impl Into<egui::RichText>) -> Response {
-        egui::Label::new(text.into().heading()).taffy_ui(self.tui())
+        egui::Label::new(text.into().heading()).taffy_ui(self.tui().unpack())
     }
 
     /// Add egui small text as child node
     #[inline]
     fn small(self, text: impl Into<egui::RichText>) -> Response {
-        egui::Label::new(text.into().small()).taffy_ui(self.tui())
+        egui::Label::new(text.into().small()).taffy_ui(self.tui().unpack())
     }
 
     /// Add egui separator  as child node
@@ -1812,7 +1863,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     /// Seperator is drawn perpendiculary to parent element flex_direction (main_axis)
     #[inline]
     fn separator(self) -> Response {
-        TaffySeparator::default().taffy_ui(self.tui())
+        TaffySeparator::default().taffy_ui(self.tui().unpack())
     }
 }
 
