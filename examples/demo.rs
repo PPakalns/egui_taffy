@@ -1,13 +1,14 @@
 use eframe::egui::{self, Vec2b};
 use eframe::{App, Frame};
+use egui_taffy::TuiBackground;
 use egui_taffy::{
-    taffy, tid, tui,
+    TuiBuilderLogic, taffy, tid, tui,
     virtual_tui::{VirtualGridRowHelper, VirtualGridRowHelperParams},
-    TuiBuilderLogic,
 };
 use taffy::{
+    Style,
     prelude::{auto, fr, length, min_content, percent, repeat, span},
-    style_helpers, Style,
+    style_helpers,
 };
 
 #[derive(Default)]
@@ -27,6 +28,8 @@ pub struct State {
     show_overflow_demo: bool,
     show_grid_sticky_demo: bool,
     show_virtual_grid_demo: bool,
+    show_background_demo: bool,
+    show_holy_grail_demo: bool,
 }
 
 impl App for MyApp {
@@ -64,6 +67,10 @@ impl App for MyApp {
         grid_sticky(ctx, state);
 
         virtual_grid_demo(ctx, state);
+
+        background_demo(ctx, state);
+
+        holy_grail_demo(ctx, state);
     }
 }
 
@@ -100,6 +107,8 @@ fn ui_side_panel(ctx: &egui::Context, state: &mut State) {
                         &mut state.show_grid_sticky_demo,
                     ),
                     ("Virtual grid row demo", &mut state.show_virtual_grid_demo),
+                    ("Background demo", &mut state.show_background_demo),
+                    ("Holy grail demo", &mut state.show_holy_grail_demo),
                 ] {
                     if tui
                         .style(taffy::Style {
@@ -267,13 +276,13 @@ fn flex_grid_demo(ctx: &egui::Context, state: &mut State) {
                     for header in align_list {
                         tui.mut_style(align_flex_content_in_center)
                             .add_with_border(|tui| {
-                                tui.label(format!("{:?}", header));
+                                tui.label(format!("{header:?}"));
                             });
                     }
 
                     for align_item in align_list {
                         tui.add_with_border(|tui| {
-                            tui.label(format!("{:?}", align_item));
+                            tui.label(format!("{align_item:?}"));
                         });
 
                         for justify_item in align_list {
@@ -286,7 +295,7 @@ fn flex_grid_demo(ctx: &egui::Context, state: &mut State) {
                             })
                             .mut_style(align_flex_content_in_center)
                             .add_with_border(|tui| {
-                                tui.label(format!("{:?} {:?}", align_item, justify_item));
+                                tui.label(format!("{align_item:?} {justify_item:?}"));
                             });
                         }
                     }
@@ -355,7 +364,7 @@ fn grow_demo(ctx: &egui::Context, state: &mut State) {
                             ..default_style()
                         })
                         .add_with_border(|tui| {
-                            tui.label(format!("Grow {}", grow));
+                            tui.label(format!("Grow {grow}"));
                         });
                     }
 
@@ -375,7 +384,7 @@ fn grow_demo(ctx: &egui::Context, state: &mut State) {
                                 ..default_style()
                             })
                             .add_with_border(|tui| {
-                                tui.label(format!("Grow {}", grow));
+                                tui.label(format!("Grow {grow}"));
                             });
                         }
                     });
@@ -437,8 +446,8 @@ fn flex_demo(ctx: &egui::Context, state: &mut State) {
                                 ..Default::default()
                             })
                             .add(|tui| {
-                                tui.label(format!("Justify items: {:?}", justify_content));
-                                tui.label(format!("Flex grow: {:?}", flex_grow));
+                                tui.label(format!("Justify items: {justify_content:?}"));
+                                tui.label(format!("Flex grow: {flex_grow:?}"));
                                 tui.label("Align self:");
                             });
 
@@ -464,7 +473,7 @@ fn flex_demo(ctx: &egui::Context, state: &mut State) {
                                         flex_grow,
                                         ..Default::default()
                                     })
-                                    .ui_add(egui::Button::new(format!("{:?}", align)));
+                                    .ui_add(egui::Button::new(format!("{align:?}")));
                                 }
                             });
                         });
@@ -550,7 +559,7 @@ fn button_demo(ctx: &egui::Context, state: &mut State) {
                                         align_self: Some(taffy::AlignItems::Center),
                                         ..Default::default()
                                     })
-                                    .label(format!("{:?}", align_item));
+                                    .label(format!("{align_item:?}"));
                                 });
                             }
                         });
@@ -585,7 +594,7 @@ fn button_demo(ctx: &egui::Context, state: &mut State) {
                                         align_self: Some(taffy::AlignItems::Center),
                                         ..Default::default()
                                     })
-                                    .label(format!("{:?}", align_item));
+                                    .label(format!("{align_item:?}"));
                                 });
                             }
                         });
@@ -632,7 +641,7 @@ fn overflow_demo(ctx: &egui::Context, state: &mut State) {
                             ..Default::default()
                         })
                         .add_with_border(|tui| {
-                            let label = format!("{:?}", overflow);
+                            let label = format!("{overflow:?}");
                             for _ in 0..50 {
                                 tui.label(&label);
                             }
@@ -692,7 +701,7 @@ fn grid_sticky(ctx: &egui::Context, state: &mut State) {
                                     ..cell_style.clone()
                                 })
                                 .add_with_border(|tui| {
-                                    tui.label(format!("Cell {} {}", i, j));
+                                    tui.label(format!("Cell {i} {j}"));
                                 });
                             }
                         }
@@ -709,8 +718,8 @@ fn grid_sticky(ctx: &egui::Context, state: &mut State) {
 
                                     ..cell_style.clone()
                                 })
-                                .add_with_background(|tui| {
-                                    tui.label(format!("Header {}", i));
+                                .add_with_background_bordered(|tui| {
+                                    tui.label(format!("Header {i}"));
                                 });
                         }
 
@@ -723,7 +732,7 @@ fn grid_sticky(ctx: &egui::Context, state: &mut State) {
                                     ..cell_style.clone()
                                 })
                                 .add_with_background(|tui| {
-                                    tui.label(format!("Row header {}", i));
+                                    tui.label(format!("Row header {i}"));
                                 });
                         }
 
@@ -734,7 +743,7 @@ fn grid_sticky(ctx: &egui::Context, state: &mut State) {
 
                                 ..cell_style.clone()
                             })
-                            .add_with_background(|tui| {
+                            .add_with_background_bordered(|tui| {
                                 tui.label("Top left");
                             });
                     });
@@ -822,7 +831,7 @@ fn virtual_grid_demo(ctx: &egui::Context, state: &mut State) {
                                 ..Default::default()
                             })
                             .id(tid(("header", 1)))
-                            .add_with_background_color(|tui| {
+                            .add_with_background(|tui| {
                                 tui.label("Colspan 2 header");
                             });
 
@@ -835,12 +844,334 @@ fn virtual_grid_demo(ctx: &egui::Context, state: &mut State) {
                                         ..Default::default()
                                     })
                                     .id(tid(("header", ridx, idx)))
-                                    .add_with_background_color(|tui| {
-                                        tui.label(format!("Header {} {}", ridx, idx));
+                                    .add_with_background(|tui| {
+                                        tui.label(format!("Header {ridx} {idx}"));
                                     });
                             }
                         }
                     });
+                });
+        });
+}
+
+fn background_demo(ctx: &egui::Context, state: &mut State) {
+    let params = &mut state.button_params;
+    egui::Window::new("background demo")
+        .open(&mut state.show_background_demo)
+        .default_width(500.)
+        .show(ctx, |ui| {
+            tui(ui, ui.id().with("demo"))
+                .reserve_available_space()
+                .style(taffy::Style {
+                    flex_direction: taffy::FlexDirection::Column,
+                    justify_content: Some(taffy::JustifyContent::Center),
+                    align_items: Some(taffy::AlignItems::Center),
+                    max_size: percent(1.),
+                    size: percent(1.),
+                    gap: length(10.),
+                    ..Default::default()
+                })
+                .show(|tui| {
+                    let box_style = taffy::Style {
+                        size: taffy::Size {
+                            height: length(200.),
+                            width: length(200.),
+                        },
+                        justify_content: Some(taffy::JustifyContent::Center),
+                        align_items: Some(taffy::AlignItems::Center),
+                        padding: length(20.),
+                        ..Default::default()
+                    };
+
+                    let row_style = taffy::Style {
+                        flex_direction: taffy::FlexDirection::Row,
+                        gap: length(10.),
+                        padding: length(10.),
+                        ..Default::default()
+                    };
+
+                    tui.add(|tui| tui.heading("backgrounds".to_uppercase()));
+
+                    tui.style(row_style.clone()).add_with_background_color(
+                        egui::Color32::BLACK,
+                        |tui| {
+                            tui.style(box_style.clone()).add_with_background(|tui| {
+                                tui.colored_label(
+                                    egui::Color32::WHITE,
+                                    "bg default".to_uppercase(),
+                                );
+                            });
+
+                            tui.style(box_style.clone())
+                                .add_with_background_bordered(|tui| {
+                                    tui.colored_label(
+                                        egui::Color32::WHITE,
+                                        "bg + border default".to_uppercase(),
+                                    );
+                                });
+
+                            tui.style(box_style.clone()).add_with_background_color(
+                                egui::Color32::TRANSPARENT,
+                                |tui| {
+                                    tui.colored_label(
+                                        egui::Color32::WHITE,
+                                        "bg transparent".to_uppercase(),
+                                    );
+                                },
+                            );
+
+                            tui.style(box_style.clone()).add_with_background_color(
+                                egui::Color32::DARK_GRAY,
+                                |tui| {
+                                    tui.colored_label(
+                                        egui::Color32::WHITE,
+                                        "bg custom".to_uppercase(),
+                                    );
+                                },
+                            );
+
+                            tui.style(box_style.clone()).add_with_background_ext(
+                                TuiBackground::new()
+                                    .with_background_color(egui::Color32::LIGHT_GRAY)
+                                    .with_border_color(egui::Color32::WHITE)
+                                    .with_border_width(20.)
+                                    .with_corner_radius(egui::CornerRadius::from(40.)),
+                                |tui| {
+                                    tui.colored_label(egui::Color32::BLACK, "ext 1".to_uppercase());
+                                },
+                            );
+
+                            tui.style(box_style.clone()).add_with_background_ext(
+                                TuiBackground::new()
+                                    .with_border()
+                                    .with_border_width(40.)
+                                    .with_corner_radius(200),
+                                |tui| {
+                                    tui.colored_label(egui::Color32::WHITE, "ext 2".to_uppercase());
+                                },
+                            );
+                        },
+                    );
+
+                    tui.add(|tui| tui.heading("buttons".to_uppercase()));
+
+                    tui.style(row_style)
+                        .add_with_background_color(egui::Color32::BLACK, |tui| {
+                            let response = tui.style(box_style.clone()).button(|tui| {
+                                tui.colored_label(egui::Color32::WHITE, "button".to_uppercase());
+                            });
+
+                            if response.clicked() {
+                                params.counter += 1;
+                            }
+
+                            let label_selectable = if params.selected {
+                                "selected"
+                            } else {
+                                "selectable"
+                            };
+                            let response =
+                                tui.style(box_style.clone())
+                                    .selectable(params.selected, |tui| {
+                                        tui.colored_label(
+                                            egui::Color32::WHITE,
+                                            label_selectable.to_uppercase(),
+                                        );
+                                    });
+
+                            if response.clicked() {
+                                params.selected = !params.selected;
+                            }
+
+                            let response =
+                                tui.style(box_style.clone()).clickable_with_background_ext(
+                                    TuiBackground::new()
+                                        .with_background_color(egui::Color32::TRANSPARENT),
+                                    |tui| {
+                                        tui.colored_label(
+                                            egui::Color32::WHITE,
+                                            "ext clickable transparent".to_uppercase(),
+                                        );
+                                    },
+                                );
+
+                            if response.clicked() {
+                                params.counter += 1;
+                            }
+
+                            let response =
+                                tui.style(box_style.clone()).clickable_with_background_ext(
+                                    TuiBackground::new()
+                                        .with_border()
+                                        .with_border_width_by_response(Box::new({
+                                            move |_, _, response| {
+                                                if response.hovered() { 10. } else { 2. }
+                                            }
+                                        }))
+                                        .with_corner_radius(20),
+                                    |tui| {
+                                        tui.colored_label(
+                                            egui::Color32::WHITE,
+                                            "ext clickable".to_uppercase(),
+                                        );
+                                    },
+                                );
+
+                            if response.clicked() {
+                                params.counter += 1;
+                            }
+
+                            let response =
+                                tui.style(box_style.clone()).clickable_with_background_ext(
+                                    TuiBackground::new()
+                                        .with_background_color(if params.selected {
+                                            egui::Color32::GRAY
+                                        } else {
+                                            egui::Color32::LIGHT_GRAY
+                                        })
+                                        .with_border_color_by_response(Box::new({
+                                            move |_, _, response| {
+                                                if response.hovered() {
+                                                    egui::Color32::DARK_GRAY
+                                                } else {
+                                                    egui::Color32::WHITE
+                                                }
+                                            }
+                                        }))
+                                        .with_border_width_by_response(Box::new({
+                                            move |_, _, response| {
+                                                if response.hovered() { 10. } else { 20. }
+                                            }
+                                        }))
+                                        .with_corner_radius(200),
+                                    |tui| {
+                                        tui.colored_label(
+                                            egui::Color32::BLACK,
+                                            format!("ext {label_selectable}").to_uppercase(),
+                                        );
+                                    },
+                                );
+
+                            if response.clicked() {
+                                params.selected = !params.selected;
+                            }
+                        });
+                    tui.style(taffy::Style {
+                        flex_direction: taffy::FlexDirection::Row,
+                        gap: length(20.),
+                        ..Default::default()
+                    })
+                    .add(|tui| {
+                        tui.label(format!("clicked: {}x", params.counter).to_uppercase());
+
+                        tui.add(|tui| {
+                            tui.label(format!("selected: {}", params.selected).to_uppercase())
+                        });
+                    });
+                })
+        });
+}
+
+fn holy_grail_demo(ctx: &egui::Context, state: &mut State) {
+    egui::Window::new("holy grail demo")
+        .open(&mut state.show_holy_grail_demo)
+        .default_width(500.)
+        .show(ctx, |ui| {
+            tui(ui, ui.id().with("holy_grail"))
+                .reserve_available_space()
+                .style(taffy::Style {
+                    display: taffy::Display::Grid,
+                    size: taffy::Size {
+                        width: percent(1.),
+                        height: percent(1.),
+                    },
+                    grid_template_columns: vec![length(100.), fr(1.), length(100.)],
+                    grid_template_rows: vec![length(100.), fr(1.), length(100.)],
+                    ..Default::default()
+                })
+                .show(|tui| {
+                    let style = tui.egui_style_mut();
+                    style.visuals.widgets.noninteractive.corner_radius = egui::CornerRadius::ZERO;
+
+                    let header = Style {
+                        grid_row: style_helpers::line(1),
+                        grid_column: span(3),
+                        display: taffy::Display::Flex,
+                        justify_content: Some(taffy::JustifyContent::Center),
+                        align_items: Some(taffy::AlignItems::Center),
+
+                        ..Default::default()
+                    };
+                    let left_sidebar = Style {
+                        grid_row: style_helpers::line(2),
+                        grid_column: style_helpers::line(1),
+                        display: taffy::Display::Flex,
+                        justify_content: Some(taffy::JustifyContent::Center),
+                        align_items: Some(taffy::AlignItems::Center),
+                        ..Default::default()
+                    };
+                    let content_area = Style {
+                        grid_row: style_helpers::line(2),
+                        grid_column: style_helpers::line(2),
+                        display: taffy::Display::Flex,
+                        justify_content: Some(taffy::JustifyContent::Center),
+                        align_items: Some(taffy::AlignItems::Center),
+                        ..Default::default()
+                    };
+                    let right_sidebar = Style {
+                        grid_row: style_helpers::line(2),
+                        grid_column: style_helpers::line(3),
+                        display: taffy::Display::Flex,
+                        justify_content: Some(taffy::JustifyContent::Center),
+                        align_items: Some(taffy::AlignItems::Center),
+                        ..Default::default()
+                    };
+                    let footer = Style {
+                        grid_row: style_helpers::line(3),
+                        grid_column: span(3),
+                        display: taffy::Display::Flex,
+                        justify_content: Some(taffy::JustifyContent::Center),
+                        align_items: Some(taffy::AlignItems::Center),
+                        ..Default::default()
+                    };
+
+                    tui.style(header)
+                        .add_with_background_color(egui::Color32::WHITE, |tui| {
+                            tui.ui(|ui| {
+                                ui.colored_label(egui::Color32::GRAY, "header");
+                            });
+                        });
+
+                    tui.style(left_sidebar).add_with_background_color(
+                        egui::Color32::ORANGE,
+                        |tui| {
+                            tui.ui(|ui| {
+                                ui.colored_label(egui::Color32::WHITE, "left");
+                            });
+                        },
+                    );
+
+                    tui.style(content_area).add_with_background(|tui| {
+                        tui.ui(|ui| {
+                            ui.colored_label(egui::Color32::WHITE, "content");
+                        });
+                    });
+
+                    tui.style(right_sidebar).add_with_background_color(
+                        egui::Color32::MAGENTA,
+                        |tui| {
+                            tui.ui(|ui| {
+                                ui.colored_label(egui::Color32::WHITE, "right");
+                            });
+                        },
+                    );
+
+                    tui.style(footer)
+                        .add_with_background_color(egui::Color32::GRAY, |tui| {
+                            tui.ui(|ui| {
+                                ui.colored_label(egui::Color32::WHITE, "footer");
+                            });
+                        });
                 });
         });
 }
