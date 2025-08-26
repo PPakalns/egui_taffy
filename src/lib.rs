@@ -1319,6 +1319,9 @@ pub trait TuiBuilderParamsAccess<'r, BG> {
     /// Access current inner Tui used to build new UI node
     fn builder_tui(&self) -> &Tui;
 
+    /// Access builder background parameters
+    fn background_params_mut(&mut self) -> &mut BG;
+
     /// Unpack parameters to build UI node
     fn unpack(self) -> TuiBuilder<'r, BG>;
 }
@@ -1332,6 +1335,11 @@ impl<'r, BG> TuiBuilderParamsAccess<'r, BG> for TuiBuilder<'r, BG> {
     #[inline]
     fn builder_tui(&self) -> &Tui {
         self.builder_tui
+    }
+
+    #[inline]
+    fn background_params_mut(&mut self) -> &mut BG {
+        &mut self.background
     }
 
     #[inline]
@@ -1389,6 +1397,14 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     fn mut_style(self, f: impl FnOnce(&mut taffy::Style)) -> Self::Builder {
         let mut tui = self.tui();
         f(tui.params_mut().style.get_or_insert_with(Default::default));
+        tui
+    }
+
+    /// Mutable background
+    #[inline]
+    fn mut_bg(self, f: impl FnOnce(&mut Self::Background)) -> Self::Builder {
+        let mut tui = self.tui();
+        f(tui.background_params_mut());
         tui
     }
 
