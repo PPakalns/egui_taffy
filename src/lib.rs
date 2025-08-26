@@ -1099,7 +1099,7 @@ pub trait TuiWidget {
     type Response;
     /// Show your widget here. Use the provided [`TuiBuilder`] to draw your widget correctly
     /// using the given style.
-    fn taffy_ui(self, tuib: TuiBuilder) -> Self::Response;
+    fn taffy_ui<'a, TuiBuilder: TuiBuilderLogic<'a>>(self, tuib: TuiBuilder) -> Self::Response;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1206,11 +1206,14 @@ impl TaffyState {
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Helper structure to provide more egonomic API for child ui container creation
+///
+/// You can use [`TuiBuilder`] with custom background drawing logic by replaceing `BG`
+/// implementation.
 #[must_use]
-pub struct TuiBuilder<'r, B = ()> {
+pub struct TuiBuilder<'r, BG = bg::TuiBackground> {
     builder_tui: &'r mut Tui,
     params: TuiBuilderParams,
-    data: B,
+    background: BG,
 }
 
 /// Parameters for creating child element in Tui layout
@@ -1250,9 +1253,12 @@ impl<'r> TuiBuilder<'r> {
 /// Helper trait to reduce code boilerplate
 pub trait AsTuiBuilder<'r>: Sized {
     /// Associated builder type that will be used to create UI node
-    type Builder: TuiBuilderParamsAccess<'r>
+    type Builder: TuiBuilderParamsAccess<'r, Self::Background>
         + TuiBuilderLogic<'r>
         + AsTuiBuilder<'r, Builder = Self::Builder>;
+
+    /// Logic that will be used to draw UI node backgrounds
+    type Background;
 
     /// Initialize creation of tui new child node
     fn tui(self) -> Self::Builder;
@@ -1260,6 +1266,7 @@ pub trait AsTuiBuilder<'r>: Sized {
 
 impl<'r> AsTuiBuilder<'r> for &'r mut Tui {
     type Builder = TuiBuilder<'r>;
+    type Background = bg::TuiBackground;
 
     #[inline]
     fn tui(self) -> Self::Builder {
@@ -1274,13 +1281,14 @@ impl<'r> AsTuiBuilder<'r> for &'r mut Tui {
                 layout: None,
                 sticky: egui::Vec2b::FALSE,
             },
-            data: (),
+            background: Default::default(),
         }
     }
 }
 
-impl<'r> AsTuiBuilder<'r> for TuiBuilder<'r> {
+impl<'r, BG> AsTuiBuilder<'r> for TuiBuilder<'r, BG> {
     type Builder = Self;
+    type Background = BG;
 
     #[inline]
     fn tui(self) -> Self::Builder {
@@ -1299,7 +1307,7 @@ where
 
 /// Trait to allow users to override TuiBuilderLogic with their own logic
 /// and to reuse existing logic
-pub trait TuiBuilderParamsAccess<'r> {
+pub trait TuiBuilderParamsAccess<'r, BG> {
     /// Access parameters for node currently being built
     fn params_mut(&mut self) -> &mut TuiBuilderParams;
 
@@ -1307,10 +1315,10 @@ pub trait TuiBuilderParamsAccess<'r> {
     fn builder_tui(&self) -> &Tui;
 
     /// Unpack parameters to build UI node
-    fn unpack(self) -> TuiBuilder<'r>;
+    fn unpack(self) -> TuiBuilder<'r, BG>;
 }
 
-impl<'r> TuiBuilderParamsAccess<'r> for TuiBuilder<'r> {
+impl<'r, BG> TuiBuilderParamsAccess<'r, BG> for TuiBuilder<'r, BG> {
     #[inline]
     fn params_mut(&mut self) -> &mut TuiBuilderParams {
         &mut self.params
@@ -1322,7 +1330,7 @@ impl<'r> TuiBuilderParamsAccess<'r> for TuiBuilder<'r> {
     }
 
     #[inline]
-    fn unpack(self) -> TuiBuilder<'r> {
+    fn unpack(self) -> Self {
         self
     }
 }
@@ -1701,7 +1709,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
         let TuiBuilder {
             builder_tui,
             params,
-            data: (),
+            background,
         } = self.tui().unpack();
         builder_tui.add_child(params, content, f)
     }

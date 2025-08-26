@@ -1,7 +1,8 @@
 use egui::{Align, Ui, UiBuilder};
 use taffy::prelude::{auto, length};
 
-use crate::{TuiBuilder, TuiBuilderLogic, TuiWidget};
+use crate::TuiBuilderParamsAccess;
+use crate::{TuiBuilderLogic, TuiWidget};
 
 /// Separator that correctly grows in tui environment in both axis
 ///
@@ -20,7 +21,8 @@ impl egui::Widget for TaffySeparator {
 impl TuiWidget for TaffySeparator {
     type Response = egui::Response;
 
-    fn taffy_ui(mut self, mut tui: TuiBuilder) -> Self::Response {
+    fn taffy_ui<'a, TuiBuilder: TuiBuilderLogic<'a>>(mut self, tui: TuiBuilder) -> Self::Response {
+        let mut tui = tui.tui();
         let flex_direction = tui.builder_tui().current_style().flex_direction;
 
         let stroke = tui

@@ -1,6 +1,6 @@
 use crate::{TuiBuilderLogic, TuiContainerResponse};
 
-use super::{TuiBuilder, TuiWidget};
+use super::{TuiBuilderParamsAccess, TuiWidget};
 
 /// Implement egui widgets for taffy ui
 ///
@@ -11,8 +11,8 @@ macro_rules! impl_widget {
             impl TuiWidget for $widget {
                 type Response = egui::Response;
 
-                fn taffy_ui(self, tuib: TuiBuilder) -> Self::Response {
-                    tuib.ui_add_manual(|ui| ui.add(self), identity_transform)
+                fn taffy_ui<'a, TuiBuilder: TuiBuilderLogic<'a>>(self, tui: TuiBuilder) -> Self::Response {
+                    tui.ui_add_manual(|ui| ui.add(self), identity_transform)
                 }
             }
         )*
@@ -33,12 +33,12 @@ impl_widget!(
 
 impl TuiWidget for egui::Label {
     type Response = egui::Response;
-    fn taffy_ui(self, tuib: TuiBuilder) -> Self::Response {
+    fn taffy_ui<'a, TuiBuilder: TuiBuilderLogic<'a>>(self, tui: TuiBuilder) -> Self::Response {
         // Egui intrinsic size doesn't take into account text wrapping
         let wrap_mode = true; // This shouldn't cause problems even in non wrap mode
-        // let wrap_mode = tuib.params.wrap_mode == Some(egui::TextWrapMode::Wrap);
+        // let wrap_mode = tui.params.wrap_mode == Some(egui::TextWrapMode::Wrap);
 
-        tuib.ui_add_manual(
+        tui.ui_add_manual(
             |ui| ui.add(self),
             |mut response, _ui| {
                 if wrap_mode {
@@ -57,14 +57,16 @@ impl TuiWidget for egui::Label {
 impl TuiWidget for egui::ProgressBar {
     type Response = egui::Response;
 
-    fn taffy_ui(self, tuib: TuiBuilder) -> Self::Response {
+    fn taffy_ui<'a, TuiBuilder: TuiBuilderLogic<'a>>(self, tui: TuiBuilder) -> Self::Response {
+        let tui = tui.tui();
+
         // Values taken from ProgressBar implementation
         let intrinsic_size = egui::Vec2 {
             x: 96.,
-            y: tuib.builder_tui().egui_ui().spacing().interact_size.y,
+            y: tui.builder_tui().egui_ui().style().spacing.interact_size.y,
         };
 
-        tuib.ui_add_manual(
+        tui.ui_add_manual(
             |ui| ui.add(self),
             |mut val, _ui| {
                 val.intrinsic_size = Some(
@@ -82,7 +84,7 @@ impl TuiWidget for egui::ProgressBar {
 impl TuiWidget for egui::Button<'_> {
     type Response = egui::Response;
 
-    fn taffy_ui(self, tui: TuiBuilder) -> Self::Response {
+    fn taffy_ui<'a, TuiBuilder: TuiBuilderLogic<'a>>(self, tui: TuiBuilder) -> Self::Response {
         tui.ui_add_manual(
             |ui| ui.centered_and_justified(|ui| ui.add(self)).inner,
             |mut val, _ui| {
