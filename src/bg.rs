@@ -210,7 +210,7 @@ impl<'a> TuiBackground<'a> {
 
     // Internal function to draw content of background.
     fn draw_internal(
-        &self,
+        self,
         ui: &egui::Ui,
         container: &TaffyContainerUi,
         response: Option<&Response>,
@@ -227,15 +227,15 @@ impl<'a> TuiBackground<'a> {
         let rect = container.full_container();
 
         // Helper to get value out from `TuiBackgroundValue`
-        fn match_value<T: Copy>(
+        fn match_value<T>(
             visuals: &egui::style::Visuals,
             widget_visuals: &egui::style::WidgetVisuals,
             response: Option<&Response>,
-            value: &TuiBackgroundValue<T>,
+            value: TuiBackgroundValue<T>,
         ) -> Option<T> {
             match value {
                 TuiBackgroundValue::Default => None,
-                TuiBackgroundValue::Custom(value) => Some(*value),
+                TuiBackgroundValue::Custom(value) => Some(value),
                 TuiBackgroundValue::Visuals(f) => Some((*f.func())(visuals, widget_visuals)),
                 TuiBackgroundValue::VisualsResponse(f) => match response {
                     Some(r) => Some((*f.func())(visuals, widget_visuals, r)),
@@ -243,26 +243,82 @@ impl<'a> TuiBackground<'a> {
                 },
             }
         }
+
+        fn match_value_or_fallback<T: Copy>(
+            visuals: &egui::style::Visuals,
+            widget_visuals: &egui::style::WidgetVisuals,
+            response: Option<&Response>,
+            value: TuiBackgroundValue<T>,
+            fallback: Option<TuiBackgroundValue<T>>,
+        ) -> Option<T> {
+            match match_value(visuals, widget_visuals, response, value) {
+                Some(value) => Some(value),
+                None => match fallback {
+                    Some(fallback) => match_value(visuals, widget_visuals, response, fallback),
+                    None => None,
+                },
+            }
+        }
+
+        let base = match_value(visuals, widget_visuals, response, self.default);
+
+        let (fallback_background_color, fallback_corner_radius, fallback_border) = match base {
+            Some(TuiBackgroundParams {
+                background_color,
+                corner_radius,
+                border,
+            }) => (Some(background_color), Some(corner_radius), border),
+            None => (None, None, None),
+        };
+
         // optional fill
-        let fill = match_value(
+        let fill = match_value_or_fallback(
             visuals,
             widget_visuals,
             response,
-            &self.custom.background_color,
+            self.custom.background_color,
+            fallback_background_color,
         );
 
         // optional stroke
-        let stroke = self.custom.border.as_ref().and_then(|border| {
-            let color = match_value(visuals, widget_visuals, response, &border.color)?;
-            let width = match_value(visuals, widget_visuals, response, &border.width)?;
-            Some(egui::Stroke { color, width })
-        });
+        let stroke = self
+            .custom
+            .border
+            .or_else(|| {
+                Some(TuiBackgroundBorder {
+                    color: TuiBackgroundValue::Default,
+                    width: TuiBackgroundValue::Default,
+                })
+            })
+            .and_then(|border| {
+                let (fallback_color, fallback_width) = match fallback_border {
+                    Some(TuiBackgroundBorder { color, width }) => (Some(color), Some(width)),
+                    None => (None, None),
+                };
 
-        let corner_radius = match_value(
+                let color = match_value_or_fallback(
+                    visuals,
+                    widget_visuals,
+                    response,
+                    border.color,
+                    fallback_color,
+                )?;
+                let width = match_value_or_fallback(
+                    visuals,
+                    widget_visuals,
+                    response,
+                    border.width,
+                    fallback_width,
+                )?;
+                Some(egui::Stroke { color, width })
+            });
+
+        let corner_radius = match_value_or_fallback(
             visuals,
             widget_visuals,
             response,
-            &self.custom.corner_radius,
+            self.custom.corner_radius,
+            fallback_corner_radius,
         )
         .unwrap_or_default();
 

@@ -1703,10 +1703,28 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
             response
         }
 
+        fn background_true(
+            ui: &mut egui::Ui,
+            container: &TaffyContainerUi,
+            response: Option<&egui::Response>,
+        ) -> Response {
+            background(ui, container, true)
+        }
+
+        fn background_false(
+            ui: &mut egui::Ui,
+            container: &TaffyContainerUi,
+            selected: Option<&egui::Response>,
+        ) -> Response {
+            background(ui, container, false)
+        }
+
         let return_values = tui.builder_tui.add_child(
             tui.params,
-            |ui: &mut egui::Ui, container: &TaffyContainerUi, response: Option<&egui::Response>| {
-                background(ui, container, selected)
+            if selected {
+                background_true
+            } else {
+                background_false
             },
             |tui, bg_response| {
                 setup_tui_visuals(tui, bg_response);
