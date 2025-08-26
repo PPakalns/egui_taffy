@@ -72,7 +72,7 @@ impl TuiWidget for TaffySeparator {
         };
 
         let return_values = tui.add_with_background_ui(
-            |ui, container| {
+            |ui, container, response| {
                 let inner = container.full_container_without_border_and_padding();
                 ui.scope_builder(UiBuilder::new().layout(layout).max_rect(inner), |ui| {
                     ui.add(self.separator)

@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
+use bg::BackgroundDraw;
 use egui::util::IdTypeMap;
 use egui::{Pos2, Response, Ui, UiBuilder};
 use parking_lot::{ArcMutexGuard, RawMutex};
@@ -27,6 +28,9 @@ pub mod virtual_tui;
 
 /// Implements custom styling of taffy node backgrounds
 pub mod bg;
+
+/// Implements logic for interactive widget creation
+pub mod interact;
 
 /// Helper function to initialize taffy layout
 pub fn tui(ui: &mut egui::Ui, id: impl Into<egui::Id>) -> TuiInitializer<'_> {
@@ -352,22 +356,25 @@ impl Tui {
     where
         B: BackgroundDraw,
     {
-        let mut background_slot = stackbox::Slot::VACANT;
+        // To avoid compilation of too many generic functions
+        // we do type erasure over UI logic.
+        //
+        // For background logic type erasure is not done as there are a lot less custom
+        // implementations for it.
         let mut ui_slot = stackbox::Slot::VACANT;
 
-        self.add_child_dyn(
-            params,
-            background_slot.stackbox(background_draw).into_dyn(),
-            ui_slot.stackbox(f).into_dyn(),
-        )
+        self.add_child_dyn(params, background_draw, ui_slot.stackbox(f).into_dyn())
     }
 
     fn add_child_dyn<FR, BR>(
         &mut self,
         params: TuiBuilderParams,
-        background_draw: StackBoxDynBackgroundDrawDyn<BR>,
-        f: StackBoxDynFnOnceTuiUi<BR, FR>,
-    ) -> TaffyMainBackgroundReturnValues<FR, BR> {
+        background_draw: BR,
+        f: StackBoxDynFnOnceTuiUi<BR::ReturnValue, FR>,
+    ) -> TaffyMainBackgroundReturnValues<FR, BR::ReturnValue>
+    where
+        BR: BackgroundDraw,
+    {
         let TuiBuilderParams {
             id,
             style,
@@ -426,10 +433,8 @@ impl Tui {
             }
         }
 
-        let mut bg = match background_draw.simulate_execution_dyn() {
-            Some(val) => val,
-            None => background_draw.draw_dyn(&mut child_ui, &self.taffy_container),
-        };
+        // TODO: !
+        let mut bg = background_draw.draw(&mut child_ui, &self.taffy_container, None);
 
         let fg = {
             let mut scroll_in_directions = egui::Vec2b::FALSE;
@@ -1210,7 +1215,7 @@ impl TaffyState {
 /// You can use [`TuiBuilder`] with custom background drawing logic by replaceing `BG`
 /// implementation.
 #[must_use]
-pub struct TuiBuilder<'r, BG = bg::TuiBackground> {
+pub struct TuiBuilder<'r, BG = bg::TuiBackground<'r>> {
     builder_tui: &'r mut Tui,
     params: TuiBuilderParams,
     background: BG,
@@ -1266,7 +1271,7 @@ pub trait AsTuiBuilder<'r>: Sized {
 
 impl<'r> AsTuiBuilder<'r> for &'r mut Tui {
     type Builder = TuiBuilder<'r>;
-    type Background = bg::TuiBackground;
+    type Background = bg::TuiBackground<'r>;
 
     #[inline]
     fn tui(self) -> Self::Builder {
@@ -1479,7 +1484,11 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     fn add_with_background_color<T>(self, f: impl FnOnce(&mut Tui) -> T) -> T {
         let tui = self.tui();
 
-        fn background(ui: &mut egui::Ui, container: &TaffyContainerUi) {
+        fn background(
+            ui: &mut egui::Ui,
+            container: &TaffyContainerUi,
+            response: Option<&egui::Response>,
+        ) {
             // TODO: Expand added to fill rounded gaps between elements
             // How to correctly fill space between elements?
             let rect = container.full_container().expand(1.);
@@ -1502,7 +1511,11 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     fn add_with_background<T>(self, f: impl FnOnce(&mut Tui) -> T) -> T {
         let tui = self.tui().with_border_style_from_egui_style();
 
-        fn background(ui: &mut egui::Ui, container: &TaffyContainerUi) {
+        fn background(
+            ui: &mut egui::Ui,
+            container: &TaffyContainerUi,
+            response: Option<&egui::Response>,
+        ) {
             let rect = container.full_container();
 
             let _response = ui.interact(rect, ui.id().with("bg"), egui::Sense::click_and_drag());
@@ -1549,7 +1562,11 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     /// Add tui node as children to this node and draw simple group Frame background
     #[inline]
     fn add_with_border<T>(self, f: impl FnOnce(&mut Tui) -> T) -> T {
-        fn background(ui: &mut egui::Ui, container: &TaffyContainerUi) {
+        fn background(
+            ui: &mut egui::Ui,
+            container: &TaffyContainerUi,
+            response: Option<&egui::Response>,
+        ) {
             let visuals = ui.style().noninteractive();
             let rect = container.full_container();
 
@@ -1574,7 +1591,11 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     fn clickable<T>(self, f: impl FnOnce(&mut Tui) -> T) -> TuiInnerResponse<T> {
         let tui = self.tui().unpack();
 
-        fn background(ui: &mut egui::Ui, container: &TaffyContainerUi) -> Response {
+        fn background(
+            ui: &mut egui::Ui,
+            container: &TaffyContainerUi,
+            response: Option<&egui::Response>,
+        ) -> Response {
             let rect = container.full_container();
             ui.interact(rect, ui.id().with("bg"), egui::Sense::click())
         }
@@ -1630,7 +1651,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
 
         let return_values = tui.builder_tui.add_child(
             tui.params,
-            |ui: &mut egui::Ui, container: &TaffyContainerUi| {
+            |ui: &mut egui::Ui, container: &TaffyContainerUi, response: Option<&egui::Response>| {
                 background(ui, container, target_tint_color)
             },
             |tui, bg_response| {
@@ -1684,7 +1705,9 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
 
         let return_values = tui.builder_tui.add_child(
             tui.params,
-            |ui: &mut egui::Ui, container: &TaffyContainerUi| background(ui, container, selected),
+            |ui: &mut egui::Ui, container: &TaffyContainerUi, response: Option<&egui::Response>| {
+                background(ui, container, selected)
+            },
             |tui, bg_response| {
                 setup_tui_visuals(tui, bg_response);
                 f(tui)
@@ -1703,7 +1726,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     #[inline]
     fn add_with_background_ui<FR, BR>(
         self,
-        content: impl FnOnce(&mut egui::Ui, &TaffyContainerUi) -> BR,
+        content: impl FnOnce(&mut egui::Ui, &TaffyContainerUi, Option<&egui::Response>) -> BR,
         f: impl FnOnce(&mut Tui, &mut BR) -> FR,
     ) -> TaffyMainBackgroundReturnValues<FR, BR> {
         let TuiBuilder {
@@ -1909,71 +1932,6 @@ impl<R> std::ops::Deref for TuiInnerResponse<R> {
     #[inline]
     fn deref(&self) -> &Self::Target {
         &self.response
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-/// Types that can draw background
-///
-/// [`()`] type draws empty background.
-trait BackgroundDraw {
-    /// Value returned by background drawing functionality
-    type ReturnValue;
-
-    /// Function returns Some(value) if background doesn't need to be drawn
-    fn simulate_execution(&self) -> Option<Self::ReturnValue>;
-
-    /// Implements background drawing functionality
-    fn draw(self, ui: &mut egui::Ui, container: &TaffyContainerUi) -> Self::ReturnValue;
-}
-
-impl<T, B> BackgroundDraw for T
-where
-    T: FnOnce(&mut egui::Ui, &TaffyContainerUi) -> B,
-{
-    type ReturnValue = B;
-
-    #[inline]
-    fn draw(self, ui: &mut egui::Ui, container: &TaffyContainerUi) -> Self::ReturnValue {
-        self(ui, container)
-    }
-
-    #[inline]
-    fn simulate_execution(&self) -> Option<Self::ReturnValue> {
-        None
-    }
-}
-
-impl BackgroundDraw for () {
-    type ReturnValue = ();
-
-    #[inline]
-    fn draw(self, ui: &mut egui::Ui, container: &TaffyContainerUi) -> Self::ReturnValue {
-        let _ = container;
-        let _ = ui;
-    }
-
-    #[inline]
-    fn simulate_execution(&self) -> Option<Self::ReturnValue> {
-        Some(())
-    }
-}
-
-stackbox::custom_dyn! {
-    dyn BackgroundDrawDyn<Ret> : BackgroundDraw<ReturnValue = Ret>
-    {
-        fn draw_dyn(
-            self: Self,
-            ui: &mut egui::Ui,
-            container: &TaffyContainerUi,
-        ) -> Ret {
-            self.draw(ui, container)
-        }
-
-        fn simulate_execution_dyn(self: &Self) -> Option<Ret> {
-            self.simulate_execution()
-        }
     }
 }
 
