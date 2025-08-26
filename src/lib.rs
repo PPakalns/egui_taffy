@@ -25,6 +25,9 @@ mod egui_widgets;
 /// Helper functionality for virtual elements
 pub mod virtual_tui;
 
+/// Implements custom styling of taffy node backgrounds
+pub mod bg;
+
 /// Helper function to initialize taffy layout
 pub fn tui(ui: &mut egui::Ui, id: impl Into<egui::Id>) -> TuiInitializer<'_> {
     TuiInitializer {
@@ -1204,9 +1207,10 @@ impl TaffyState {
 
 /// Helper structure to provide more egonomic API for child ui container creation
 #[must_use]
-pub struct TuiBuilder<'r> {
+pub struct TuiBuilder<'r, B = ()> {
     builder_tui: &'r mut Tui,
     params: TuiBuilderParams,
+    data: B,
 }
 
 /// Parameters for creating child element in Tui layout
@@ -1270,6 +1274,7 @@ impl<'r> AsTuiBuilder<'r> for &'r mut Tui {
                 layout: None,
                 sticky: egui::Vec2b::FALSE,
             },
+            data: (),
         }
     }
 }
@@ -1696,6 +1701,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
         let TuiBuilder {
             builder_tui,
             params,
+            data: (),
         } = self.tui().unpack();
         builder_tui.add_child(params, content, f)
     }
