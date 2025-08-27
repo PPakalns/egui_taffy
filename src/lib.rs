@@ -25,6 +25,9 @@ mod egui_widgets;
 /// Helper functionality for virtual elements
 pub mod virtual_tui;
 
+/// Custom background implementations to paint UI node backgrounds
+pub mod bg;
+
 /// Helper function to initialize taffy layout
 pub fn tui(ui: &mut egui::Ui, id: impl Into<egui::Id>) -> TuiInitializer<'_> {
     TuiInitializer {
@@ -425,10 +428,7 @@ impl Tui {
             }
         }
 
-        let mut bg = match background_draw.simulate_execution_dyn() {
-            Some(val) => val,
-            None => background_draw.draw_dyn(&mut child_ui, &self.taffy_container),
-        };
+        let mut bg = background_draw.draw_dyn(&mut child_ui, &self.taffy_container);
 
         let fg = {
             let mut scroll_in_directions = egui::Vec2b::FALSE;
@@ -1316,7 +1316,7 @@ impl<'r> TuiBuilderParamsAccess<'r> for TuiBuilder<'r> {
 
     #[inline]
     fn builder_tui(&self) -> &Tui {
-        &self.builder_tui
+        self.builder_tui
     }
 
     #[inline]
@@ -1920,9 +1920,6 @@ trait BackgroundDraw {
     /// Value returned by background drawing functionality
     type ReturnValue;
 
-    /// Function returns Some(value) if background doesn't need to be drawn
-    fn simulate_execution(&self) -> Option<Self::ReturnValue>;
-
     /// Implements background drawing functionality
     fn draw(self, ui: &mut egui::Ui, container: &TaffyContainerUi) -> Self::ReturnValue;
 }
@@ -1937,11 +1934,6 @@ where
     fn draw(self, ui: &mut egui::Ui, container: &TaffyContainerUi) -> Self::ReturnValue {
         self(ui, container)
     }
-
-    #[inline]
-    fn simulate_execution(&self) -> Option<Self::ReturnValue> {
-        None
-    }
 }
 
 impl BackgroundDraw for () {
@@ -1951,11 +1943,6 @@ impl BackgroundDraw for () {
     fn draw(self, ui: &mut egui::Ui, container: &TaffyContainerUi) -> Self::ReturnValue {
         let _ = container;
         let _ = ui;
-    }
-
-    #[inline]
-    fn simulate_execution(&self) -> Option<Self::ReturnValue> {
-        Some(())
     }
 }
 
@@ -1968,10 +1955,6 @@ stackbox::custom_dyn! {
             container: &TaffyContainerUi,
         ) -> Ret {
             self.draw(ui, container)
-        }
-
-        fn simulate_execution_dyn(self: &Self) -> Option<Ret> {
-            self.simulate_execution()
         }
     }
 }
