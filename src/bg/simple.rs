@@ -3,213 +3,122 @@ use egui::{Response, Visuals, style::WidgetVisuals};
 use crate::{AsTuiBuilder, TaffyContainerUi, Tui, TuiBuilder, TuiBuilderLogic, TuiInnerResponse};
 use crate::{TuiBuilderParamsAccess, setup_tui_visuals};
 
-/// Getter function to get values defined by [`egui::style::Visuals`] and [`egui::style::WidgetVisuals`]
-type VisualsGetterFn<T> = Box<dyn Fn(&Visuals, &WidgetVisuals) -> T>;
-/// Getter function to get values defined by [`egui::style::Visuals`] and [`egui::style::WidgetVisuals`]
-/// It includes a reference to [`egui::Response`] to handle widget states
-type VisualsResponseGetterFn<T> = Box<dyn Fn(&Visuals, &WidgetVisuals, &Response) -> T>;
-
-/// Generic structure of values to draw a background by [`TuiBackground`]
-enum TuiBackgroundValue<T> {
-    /// Custom value
-    Custom(T),
-    /// Value defined by [`egui::style::Visuals`] accessible by a getter function
-    Visuals(VisualsGetterFn<T>),
-    /// Value depending on [`egui::Visuals`] accessible by a getter function
-    VisualsResponse(VisualsResponseGetterFn<T>),
-}
-
-struct TuiBackgroundBorder {
-    color: TuiBackgroundValue<egui::Color32>,
-    width: TuiBackgroundValue<f32>,
-}
-
-impl Default for TuiBackgroundBorder {
-    fn default() -> Self {
-        Self {
-            color: TuiBackgroundValue::Visuals(Box::new(|_, widget_visuals| {
-                widget_visuals.bg_stroke.color
-            })),
-            width: TuiBackgroundValue::Visuals(Box::new(|_, widget_visuals| {
-                widget_visuals.bg_stroke.width
-            })),
-        }
-    }
-}
-
 /// Helper to draw background fills and borders
-pub struct TuiBackground {
-    background_color: TuiBackgroundValue<egui::Color32>,
-    corner_radius: TuiBackgroundValue<egui::CornerRadius>,
-    border: Option<TuiBackgroundBorder>,
+pub struct TuiBackground<'a> {
+    background_color: TuiBackgroundValue<'a, egui::Color32>,
+    corner_radius: TuiBackgroundValue<'a, egui::CornerRadius>,
+    border: Option<TuiBackgroundBorder<'a>>,
 }
 
-impl Default for TuiBackground {
+impl Default for TuiBackground<'_> {
     fn default() -> Self {
         Self {
-            background_color: TuiBackgroundValue::Visuals(Box::new(|visuals, _| {
-                visuals.panel_fill
-            })),
-            corner_radius: TuiBackgroundValue::Visuals(Box::new(|_, widget_visuals| {
+            background_color: TuiBackgroundValue::Visuals(&|visuals, _| visuals.panel_fill),
+            corner_radius: TuiBackgroundValue::Visuals(&|_, widget_visuals| {
                 widget_visuals.corner_radius
-            })),
+            }),
             border: None,
         }
     }
 }
 
-impl TuiBackground {
+impl<'a> TuiBackground<'a> {
     /// Creates a new instance drawing a default background only
     pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
+        Default::default()
     }
 
     /// Draws background by given [`egui::Color32`]
-    pub fn with_background_color(self, background_color: egui::Color32) -> Self {
-        Self {
-            background_color: TuiBackgroundValue::Custom(background_color),
-            ..self
-        }
+    pub fn with_background_color(mut self, background_color: egui::Color32) -> Self {
+        self.background_color = TuiBackgroundValue::Custom(background_color);
+        self
     }
 
     /// Draws background color defined by [`egui::style::Visuals`]
-    pub fn with_background_color_by_visuals(self, f: VisualsGetterFn<egui::Color32>) -> Self {
-        Self {
-            background_color: TuiBackgroundValue::Visuals(f),
-            ..self
-        }
+    pub fn with_background_color_by_visuals(
+        mut self,
+        f: VisualsGetterFn<'a, egui::Color32>,
+    ) -> Self {
+        self.background_color = TuiBackgroundValue::Visuals(f);
+        self
     }
 
     /// Draws background color depending on [`VisualsResponseGetterFn`]
     pub fn with_background_color_by_response(
-        self,
-        f: VisualsResponseGetterFn<egui::Color32>,
+        mut self,
+        f: VisualsResponseGetterFn<'a, egui::Color32>,
     ) -> Self {
-        Self {
-            background_color: TuiBackgroundValue::VisualsResponse(f),
-            ..self
-        }
+        self.background_color = TuiBackgroundValue::VisualsResponse(f);
+        self
     }
 
     /// Draws default border
-    pub fn with_border(self) -> Self {
-        Self {
-            border: Some(TuiBackgroundBorder::default()),
-            ..self
-        }
+    pub fn with_border(mut self) -> Self {
+        self.border.get_or_insert_default();
+        self
     }
 
     /// Draws a border by given [`egui::Color32`]
-    pub fn with_border_color(self, color: egui::Color32) -> Self {
-        Self {
-            border: Some(TuiBackgroundBorder {
-                color: TuiBackgroundValue::Custom(color),
-                width: self
-                    .border
-                    .map(|b| b.width)
-                    .unwrap_or(TuiBackgroundBorder::default().width),
-            }),
-            ..self
-        }
+    pub fn with_border_color(mut self, color: egui::Color32) -> Self {
+        self.border.get_or_insert_default().color = TuiBackgroundValue::Custom(color);
+        self
     }
 
     /// Draws a border color defined by [`VisualsGetterFn`]
-    pub fn with_border_color_by_visuals(self, f: VisualsGetterFn<egui::Color32>) -> Self {
-        Self {
-            border: Some(TuiBackgroundBorder {
-                color: TuiBackgroundValue::Visuals(f),
-                width: self
-                    .border
-                    .map(|b| b.width)
-                    .unwrap_or(TuiBackgroundBorder::default().width),
-            }),
-            ..self
-        }
+    pub fn with_border_color_by_visuals(mut self, f: VisualsGetterFn<'a, egui::Color32>) -> Self {
+        self.border.get_or_insert_default().color = TuiBackgroundValue::Visuals(f);
+        self
     }
 
     /// Draws a border color defined by [`VisualsResponseGetterFn`]
-    pub fn with_border_color_by_response(self, f: VisualsResponseGetterFn<egui::Color32>) -> Self {
-        Self {
-            border: Some(TuiBackgroundBorder {
-                color: TuiBackgroundValue::VisualsResponse(f),
-                width: self
-                    .border
-                    .map(|b| b.width)
-                    .unwrap_or(TuiBackgroundBorder::default().width),
-            }),
-            ..self
-        }
+    pub fn with_border_color_by_response(
+        mut self,
+        f: VisualsResponseGetterFn<'a, egui::Color32>,
+    ) -> Self {
+        self.border.get_or_insert_default().color = TuiBackgroundValue::VisualsResponse(f);
+        self
     }
 
     /// Draws border with given width
-    pub fn with_border_width(self, width: f32) -> Self {
-        Self {
-            border: Some(TuiBackgroundBorder {
-                width: TuiBackgroundValue::Custom(width),
-                color: self
-                    .border
-                    .map(|b| b.color)
-                    .unwrap_or_else(|| TuiBackgroundBorder::default().color),
-            }),
-            ..self
-        }
+    pub fn with_border_width(mut self, width: f32) -> Self {
+        self.border.get_or_insert_default().width = TuiBackgroundValue::Custom(width);
+        self
     }
 
     /// Draws a border width defined by [`VisualsGetterFn`]
-    pub fn with_border_width_by_visuals(self, f: VisualsGetterFn<f32>) -> Self {
-        Self {
-            border: Some(TuiBackgroundBorder {
-                width: TuiBackgroundValue::Visuals(f),
-                color: self
-                    .border
-                    .map(|b| b.color)
-                    .unwrap_or_else(|| TuiBackgroundBorder::default().color),
-            }),
-            ..self
-        }
+    pub fn with_border_width_by_visuals(mut self, f: VisualsGetterFn<'a, f32>) -> Self {
+        self.border.get_or_insert_default().width = TuiBackgroundValue::Visuals(f);
+        self
     }
 
     /// Draws a border width defined by [`VisualsResponseGetterFn`]
-    pub fn with_border_width_by_response(self, f: VisualsResponseGetterFn<f32>) -> Self {
-        Self {
-            border: Some(TuiBackgroundBorder {
-                width: TuiBackgroundValue::VisualsResponse(f),
-                color: self
-                    .border
-                    .map(|b| b.color)
-                    .unwrap_or_else(|| TuiBackgroundBorder::default().color),
-            }),
-            ..self
-        }
+    pub fn with_border_width_by_response(mut self, f: VisualsResponseGetterFn<'a, f32>) -> Self {
+        self.border.get_or_insert_default().width = TuiBackgroundValue::VisualsResponse(f);
+        self
     }
 
     /// Draws corner radius with given radius
-    pub fn with_corner_radius(self, radius: impl Into<egui::CornerRadius>) -> Self {
-        Self {
-            corner_radius: TuiBackgroundValue::Custom(radius.into()),
-            ..self
-        }
+    pub fn with_corner_radius(mut self, radius: impl Into<egui::CornerRadius>) -> Self {
+        self.corner_radius = TuiBackgroundValue::Custom(radius.into());
+        self
     }
 
     /// Draws background with given [`egui::CornerRadius`] defined by [`VisualsGetterFn`]
-    pub fn with_corner_radius_by_visuals(self, f: VisualsGetterFn<egui::CornerRadius>) -> Self {
-        Self {
-            corner_radius: TuiBackgroundValue::Visuals(f),
-            ..self
-        }
+    pub fn with_corner_radius_by_visuals(
+        mut self,
+        f: VisualsGetterFn<'a, egui::CornerRadius>,
+    ) -> Self {
+        self.corner_radius = TuiBackgroundValue::Visuals(f);
+        self
     }
 
     /// Draws background with given [`egui::CornerRadius`] defined by [`VisualsResponseGetterFn`]
     pub fn with_corner_radius_by_response(
-        self,
-        f: VisualsResponseGetterFn<egui::CornerRadius>,
+        mut self,
+        f: VisualsResponseGetterFn<'a, egui::CornerRadius>,
     ) -> Self {
-        Self {
-            corner_radius: TuiBackgroundValue::VisualsResponse(f),
-            ..self
-        }
+        self.corner_radius = TuiBackgroundValue::VisualsResponse(f);
+        self
     }
 
     fn has_border(&self) -> bool {
@@ -289,12 +198,43 @@ impl TuiBackground {
     }
 }
 
+struct TuiBackgroundBorder<'a> {
+    color: TuiBackgroundValue<'a, egui::Color32>,
+    width: TuiBackgroundValue<'a, f32>,
+}
+
+impl Default for TuiBackgroundBorder<'_> {
+    fn default() -> Self {
+        Self {
+            color: TuiBackgroundValue::Visuals(&|_, widget_visuals| widget_visuals.bg_stroke.color),
+            width: TuiBackgroundValue::Visuals(&|_, widget_visuals| widget_visuals.bg_stroke.width),
+        }
+    }
+}
+
 impl<'r, T> TuiBuilderLogicWithBackground<'r> for T
 where
     T: AsTuiBuilder<'r>,
 {
     // Use default implementation
 }
+
+/// Generic structure of values to draw a background by [`TuiBackground`]
+enum TuiBackgroundValue<'a, T> {
+    /// Custom value
+    Custom(T),
+    /// Value defined by [`egui::style::Visuals`] accessible by a getter function
+    Visuals(VisualsGetterFn<'a, T>),
+    /// Value depending on [`egui::Visuals`] accessible by a getter function
+    VisualsResponse(VisualsResponseGetterFn<'a, T>),
+}
+
+/// Getter function to get values defined by [`egui::style::Visuals`] and [`egui::style::WidgetVisuals`]
+type VisualsGetterFn<'a, T> = &'a dyn Fn(&Visuals, &WidgetVisuals) -> T;
+
+/// Getter function to get values defined by [`egui::style::Visuals`] and [`egui::style::WidgetVisuals`]
+/// It includes a reference to [`egui::Response`] to handle widget states
+type VisualsResponseGetterFn<'a, T> = &'a dyn Fn(&Visuals, &WidgetVisuals, &Response) -> T;
 
 /// Logic that provides access to UI node creation with easier to define custom background
 pub trait TuiBuilderLogicWithBackground<'r>: TuiBuilderLogic<'r> {

@@ -1012,11 +1012,9 @@ fn custom_background_demo(ctx: &egui::Context, state: &mut State) {
                             let response = tui.style(box_style.clone()).bg_clickable(
                                 TuiBackground::new()
                                     .with_border()
-                                    .with_border_width_by_response(Box::new({
-                                        move |_, _, response| {
-                                            if response.hovered() { 10. } else { 2. }
-                                        }
-                                    }))
+                                    .with_border_width_by_response(&|_, _, response| {
+                                        if response.hovered() { 10. } else { 2. }
+                                    })
                                     .with_corner_radius(20),
                                 |tui| {
                                     tui.colored_label(
@@ -1037,20 +1035,16 @@ fn custom_background_demo(ctx: &egui::Context, state: &mut State) {
                                     } else {
                                         egui::Color32::LIGHT_GRAY
                                     })
-                                    .with_border_color_by_response(Box::new({
-                                        move |_, _, response| {
-                                            if response.hovered() {
-                                                egui::Color32::DARK_GRAY
-                                            } else {
-                                                egui::Color32::WHITE
-                                            }
+                                    .with_border_color_by_response(&|_, _, response| {
+                                        if response.hovered() {
+                                            egui::Color32::DARK_GRAY
+                                        } else {
+                                            egui::Color32::WHITE
                                         }
-                                    }))
-                                    .with_border_width_by_response(Box::new({
-                                        move |_, _, response| {
-                                            if response.hovered() { 10. } else { 20. }
-                                        }
-                                    }))
+                                    })
+                                    .with_border_width_by_response(&|_, _, response| {
+                                        if response.hovered() { 10. } else { 20. }
+                                    })
                                     .with_corner_radius(200),
                                 |tui| {
                                     tui.colored_label(
