@@ -130,13 +130,7 @@ impl<'a> TuiInitializer<'a> {
             ui.available_rect_before_wrap(),
             Some(self.available_space),
             self.style,
-            |tui| {
-                // Temporary scroll area size limitation
-                #[allow(deprecated)]
-                tui.set_limit_scroll_area_size(Some(0.7));
-
-                f(tui)
-            },
+            f,
         );
 
         if self.allocated_rect.is_none() {
@@ -171,10 +165,6 @@ pub struct Tui {
 
     root_rect: egui::Rect,
     available_space: Option<Size<AvailableSpace>>,
-
-    /// Temporary default limit on scroll area size due to taffy
-    /// being unable to shrink container to be smaller than content automatically
-    limit_scroll_area_size: Option<f32>,
 
     state: ArcMutexGuard<RawMutex, TaffyState>,
 
@@ -230,7 +220,6 @@ impl Tui {
             root_rect,
             available_space,
             current_id: id,
-            limit_scroll_area_size: None,
             last_scroll_offset: egui::Vec2::ZERO,
             state,
             interactive_container_inactive_style_cache: Default::default(),
@@ -251,17 +240,6 @@ impl Tui {
         );
 
         res
-    }
-
-    /// Set maximal size coefficient of scroll area based on root element size
-    ///
-    /// `scroll_area max height = root_height * size`
-    ///
-    /// Taffy doesn't correctly shrink nodes that should have larger content than their size
-    /// (overflow)
-    #[deprecated]
-    pub fn set_limit_scroll_area_size(&mut self, size: Option<f32>) {
-        self.limit_scroll_area_size = size;
     }
 
     /// Add taffy child node, correctly update taffy tree state
@@ -587,85 +565,6 @@ impl Tui {
         });
 
         fg_bg.main
-    }
-
-    /// Add scroll area egui Ui to the taffy layout
-    #[deprecated]
-    fn ui_scroll_area_ext<T>(
-        &mut self,
-        mut params: TuiBuilderParams,
-        limit: Option<f32>,
-        content: impl FnOnce(&mut Ui) -> T,
-    ) -> T {
-        let style = params.style.get_or_insert_with(Style::default);
-
-        style.overflow = taffy::Point {
-            x: taffy::Overflow::Visible,
-            y: taffy::Overflow::Hidden,
-        };
-        style.display = taffy::Display::Block;
-        style.min_size = Size {
-            width: Dimension::Length(0.),
-            height: Dimension::Length(0.),
-        };
-        if let Some(limit) = limit {
-            style.max_size.height = Dimension::Length(self.root_rect.height() * limit);
-            style.max_size.width = Dimension::Length(self.root_rect.width() * limit);
-        }
-
-        self.tui().params(params).add(|tui| {
-            let layout = *tui
-                .state
-                .taffy_tree
-                .layout(tui.current_node.unwrap())
-                .unwrap();
-
-            tui.add_container(
-                TuiBuilderParams {
-                    id: "inner".into(),
-                    style: None,
-                    disabled: false,
-                    wrap_mode: None,
-                    egui_style: None,
-                    layout: None,
-                    sticky: egui::Vec2b::FALSE,
-                },
-                |ui, _params| {
-                    let mut real_min_size = None;
-                    let scroll_area = egui::ScrollArea::both()
-                        .id_salt(ui.id().with("scroll_area"))
-                        .max_width(ui.available_width())
-                        .min_scrolled_width(layout.size.width)
-                        .max_width(layout.size.width)
-                        .min_scrolled_height(layout.size.height)
-                        .max_height(layout.size.height)
-                        .show(ui, |ui| {
-                            let resp = content(ui);
-                            real_min_size = Some(ui.min_size());
-                            resp
-                        });
-
-                    let potential_frame_size = scroll_area.content_size;
-
-                    // let min_size = egui::Vec2 {
-                    //     x: potential_frame_size.x,
-                    //     y: 0.3 * potential_frame_size.y,
-                    // };
-                    let max_size = egui::Vec2 {
-                        x: potential_frame_size.x,
-                        y: potential_frame_size.y,
-                    };
-
-                    TuiContainerResponse {
-                        inner: scroll_area.inner,
-                        min_size: real_min_size.unwrap_or(max_size),
-                        intrinsic_size: None,
-                        max_size,
-                        infinite: egui::Vec2b::FALSE,
-                    }
-                },
-            )
-        })
     }
 
     /// Check if tui layout has changed, recalculate if necessary and trigger
@@ -1710,61 +1609,6 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     ) -> TaffyMainBackgroundReturnValues<FR, BR> {
         let tui = self.tui().unpack();
         tui.builder_tui.add_child(tui.params, content, f)
-    }
-
-    /// Add scroll area egui Ui
-    ///
-    /// Alternative: Using `overflow: Scroll` scroll area will be directly inserted in taffy layout.
-    #[deprecated]
-    fn ui_scroll_area_with_background<T>(self, content: impl FnOnce(&mut Ui) -> T) -> T {
-        let mut tui = self.tui();
-        tui = tui.mut_style(|style| {
-            if style.min_size.height == Dimension::Auto {
-                style.min_size.height = Dimension::Length(0.);
-            }
-            if style.min_size.width == Dimension::Auto {
-                style.min_size.width = Dimension::Length(0.);
-            }
-        });
-
-        tui.add_with_background(move |tui| {
-            let s = LengthPercentageAuto::Length(
-                0.3 * tui.ui.text_style_height(&egui::TextStyle::Body),
-            );
-            let style = taffy::Style {
-                margin: Rect {
-                    left: s,
-                    right: s,
-                    top: s,
-                    bottom: s,
-                },
-                ..Default::default()
-            };
-            #[allow(deprecated)]
-            tui.tui().style(style).ui_scroll_area(content)
-        })
-    }
-
-    /// Add scroll area egui Ui
-    ///
-    /// Alternative: Using `overflow: Scroll` scroll area will be directly inserted in taffy layout.
-    #[deprecated]
-    fn ui_scroll_area<T>(self, content: impl FnOnce(&mut Ui) -> T) -> T {
-        let tui = self.tui().unpack();
-        let limit = tui.builder_tui.limit_scroll_area_size;
-        #[allow(deprecated)]
-        tui.ui_scroll_area_ext(limit, content)
-    }
-
-    /// Add egui::Ui scroll area with custom limit for scroll area size
-    ///
-    /// Alternative: Using `overflow: Scroll` scroll area will be directly inserted in taffy layout.
-    #[deprecated]
-    fn ui_scroll_area_ext<T>(self, limit: Option<f32>, content: impl FnOnce(&mut Ui) -> T) -> T {
-        let tui = self.tui().unpack();
-        #[allow(deprecated)]
-        tui.builder_tui
-            .ui_scroll_area_ext(tui.params, limit, content)
     }
 
     /// Add egui ui as tui leaf node

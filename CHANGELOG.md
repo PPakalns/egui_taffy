@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.0
+
+- Removed deprecated unused functions that added scroll area in the old way.
+  Use overflow: Scroll instead (See examples.)
+- Removed unused function from BackgroundDraw trait implementation.
+- Add support to extend TuiBuilderLogic in future with other types than only TuiBuilder.
+- Added simple background drawing implementation: TuiBackground.
+  It Can be used as an example to implement custom background drawing logic.
+- Added custom background and holy grail demos.
+
 ## 0.8.1
 
 - Fix text layout problems where wrapped text height was not taken into account.
