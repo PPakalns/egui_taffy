@@ -4,8 +4,9 @@
 
 - Removed deprecated unused functions that added scroll area in the old way.
   Use overflow: Scroll instead (See examples.)
+- Fixed bug with clipping rendering of horizontally overflowed items when overflow-x != Visible
 - Removed unused function from BackgroundDraw trait implementation.
-- Add support to extend TuiBuilderLogic in future with other types than only TuiBuilder.
+- Add support to extend TuiBuilderLogic in future with other types besides TuiBuilder.
 - Added simple background drawing implementation: TuiBackground.
   It Can be used as an example to implement custom background drawing logic.
 - Added custom background and holy grail demos.

@@ -427,7 +427,7 @@ impl Tui {
                 }
             }
 
-            match overflow_style.y {
+            match overflow_style.x {
                 taffy::Overflow::Visible => {
                     // Do nothing
                 }
