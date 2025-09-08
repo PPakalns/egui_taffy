@@ -161,7 +161,7 @@ Instead you should use one of the following options:
    ```
 3. Disable text wrapping:
    ```rs
-   ctx.style_mut(|style| {
+   ctx.all_styles_mut(|style| {
      style.wrap_mode = Some(egui::TextWrapMode::Extend);
    });
    ```
