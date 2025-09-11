@@ -17,8 +17,6 @@ pub struct MyApp {
 
 #[derive(Default)]
 pub struct State {
-    grow_variables: Option<GrowVariables>,
-    button_params: ButtonParams,
     show_flex_grid_demo: bool,
     show_flex_demo: bool,
     show_flex_wrap_demo: bool,
@@ -29,6 +27,10 @@ pub struct State {
     show_virtual_grid_demo: bool,
     show_background_demo: bool,
     show_holy_grail_demo: bool,
+
+    grow_variables: Option<GrowVariables>,
+    button_params: ButtonParams,
+    overflow_demo_params: OverflowParams,
 }
 
 impl App for MyApp {
@@ -611,46 +613,79 @@ fn button_demo(ctx: &egui::Context, state: &mut State) {
 
 fn overflow_demo(ctx: &egui::Context, state: &mut State) {
     egui::Window::new("Overflow demo")
-        .scroll(Vec2b { x: true, y: true })
+        .scroll(Vec2b { x: false, y: true })
         .open(&mut state.show_overflow_demo)
         .show(ctx, |ui| {
             tui(ui, ui.id().with("overflow demo"))
                 .reserve_available_width()
                 .style(taffy::Style {
-                    flex_direction: taffy::FlexDirection::Row,
-                    align_items: Some(taffy::AlignItems::Center),
+                    flex_direction: taffy::FlexDirection::Column,
                     gap: length(16.),
                     ..Default::default()
                 })
                 .show(|tui| {
-                    for overflow in [
-                        taffy::Overflow::Visible,
-                        taffy::Overflow::Clip,
-                        taffy::Overflow::Hidden,
-                        taffy::Overflow::Scroll,
-                    ] {
-                        tui.style(taffy::Style {
-                            flex_direction: taffy::FlexDirection::Column,
-                            overflow: taffy::Point {
-                                x: taffy::Overflow::default(),
-                                y: overflow,
-                            },
-                            max_size: taffy::Size {
-                                height: length(200.),
-                                width: auto(),
-                            },
-                            padding: length(12.),
-                            ..Default::default()
-                        })
-                        .add_with_border(|tui| {
-                            let label = format!("{:?}", overflow);
-                            for _ in 0..50 {
-                                tui.label(&label);
-                            }
+                    tui.ui(|ui| {
+                        ui.heading("UI nodes with non-zero borders and paddings with overflow-y");
+                        ui.horizontal(|ui| {
+                            ui.label("Count");
+                            ui.add(egui::Slider::new(
+                                &mut state.overflow_demo_params.count,
+                                0..=50,
+                            ));
                         });
-                    }
+                    });
+                    tui.style(taffy::Style {
+                        flex_direction: taffy::FlexDirection::Row,
+                        align_items: Some(taffy::AlignItems::Center),
+                        gap: length(16.),
+                        ..Default::default()
+                    })
+                    .add(|tui| {
+                        for overflow in [
+                            taffy::Overflow::Visible,
+                            taffy::Overflow::Clip,
+                            taffy::Overflow::Hidden,
+                            taffy::Overflow::Scroll,
+                        ] {
+                            tui.style(taffy::Style {
+                                flex_direction: taffy::FlexDirection::Column,
+                                overflow: taffy::Point {
+                                    x: taffy::Overflow::default(),
+                                    y: overflow,
+                                },
+                                size: taffy::Size {
+                                    height: length(200.),
+                                    width: auto(),
+                                },
+                                padding: length(6.),
+                                border: taffy::Rect {
+                                    left: length(20.),
+                                    right: length(40.),
+                                    top: length(20.),
+                                    bottom: length(40.),
+                                },
+                                ..Default::default()
+                            })
+                            .add_with_taffy_border(|tui| {
+                                let label = format!("{:?}", overflow);
+                                for _ in 0..state.overflow_demo_params.count {
+                                    tui.label(&label);
+                                }
+                            });
+                        }
+                    });
                 });
         });
+}
+
+struct OverflowParams {
+    count: usize,
+}
+
+impl Default for OverflowParams {
+    fn default() -> Self {
+        Self { count: 20 }
+    }
 }
 
 fn grid_sticky(ctx: &egui::Context, state: &mut State) {

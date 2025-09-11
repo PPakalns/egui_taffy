@@ -2,6 +2,7 @@
 
 ## 0.9.0
 
+- Fixed incorrect scroll area positioning when taffy border has non-zero values
 - Removed deprecated unused functions that added scroll area in the old way.
   Use overflow: Scroll instead (See examples.)
 - Fixed bug with clipping rendering of horizontally overflowed items when overflow-x != Visible

@@ -419,6 +419,7 @@ impl Tui {
                     if overflow_style.y == taffy::Overflow::Scroll {
                         scroll_in_directions.y = true;
                     }
+
                     // Hide overflow
                     let mut clip_rect = child_ui.clip_rect();
                     clip_rect.min.y = full_container_without_border.min.y;
@@ -446,42 +447,73 @@ impl Tui {
             }
 
             if scroll_in_directions.any() {
-                let scroll = egui::ScrollArea::new(scroll_in_directions)
-                    .min_scrolled_width(full_container_without_border.width())
-                    .max_width(full_container_without_border.width())
-                    .min_scrolled_height(full_container_without_border.height())
-                    .max_height(full_container_without_border.height())
-                    .show(&mut child_ui, |ui| {
-                        // Allocate expected size for scroll area to correctly calculate inner size
-                        let content_size = self.taffy_container.layout.content_size;
-                        ui.set_min_size(
-                            egui::Vec2::new(content_size.width, content_size.height)
-                                .max(egui::Vec2::ZERO),
-                        );
+                let container_width = full_container_without_border.width();
+                let container_height = full_container_without_border.height();
+                let mut scroll = egui::ScrollArea::new(scroll_in_directions)
+                    .max_height(container_height)
+                    .max_width(container_width);
 
-                        let mut rect = ui.min_rect();
-                        let mut offset = rect.min - self.current_rect.min;
+                if scroll_in_directions.x {
+                    scroll = scroll.min_scrolled_width(container_width)
+                }
 
-                        let stored_viewport = self.current_viewport;
-                        let stored_viewport_content = self.current_viewport_content;
+                if scroll_in_directions.y {
+                    scroll = scroll.min_scrolled_height(container_height)
+                }
 
-                        self.current_viewport = self.current_rect;
-                        self.current_viewport_content = rect;
-                        std::mem::swap(&mut self.last_scroll_offset, &mut offset);
-                        std::mem::swap(&mut self.current_rect, &mut rect);
-                        std::mem::swap(ui, &mut self.ui);
+                let resp = scroll.show_viewport(&mut child_ui, |ui, viewport_rect| {
+                    // Allocate expected size for scroll area to correctly calculate inner size
+                    let content_size = self.taffy_container.layout.content_size;
+                    let content_size = egui::Vec2::new(content_size.width, content_size.height);
+                    // TODO: Why this is needed?
+                    // Looks like taffy content size takes into account border sides
+                    //
+                    // Taffy bug or what?
+                    ui.set_min_size(
+                        (
+                            content_size
+                                - taffy_point_to_egui_pos(top_left(
+                                    &self.taffy_container.layout.border,
+                                ))
+                                .to_vec2()
+                            // * (!scroll_in_directions).to_vec2()
+                        )
+                        .max(egui::Vec2::ZERO),
+                    );
 
-                        let resp = f.show_dyn(self, &mut bg);
+                    let rect = ui.min_rect();
+                    let mut offset = -viewport_rect.min.to_vec2();
 
-                        std::mem::swap(ui, &mut self.ui);
-                        std::mem::swap(&mut self.current_rect, &mut rect);
-                        std::mem::swap(&mut self.last_scroll_offset, &mut offset);
-                        self.current_viewport_content = stored_viewport_content;
-                        self.current_viewport = stored_viewport;
+                    let stored_viewport = self.current_viewport;
+                    let stored_viewport_content = self.current_viewport_content;
 
-                        resp
-                    });
-                scroll.inner
+                    self.current_viewport = self.current_rect;
+                    self.current_viewport_content = rect;
+                    std::mem::swap(&mut self.last_scroll_offset, &mut offset);
+
+                    // We need to modify current rect to take into account nonexistent
+                    // borders when placing child elements
+                    //
+                    // taffy calculates child elements in relation to parent node
+                    // (including borders)
+                    self.current_rect = rect.translate(
+                        -taffy_point_to_egui_pos(top_left(&self.taffy_container.layout.border))
+                            .to_vec2(),
+                    );
+
+                    std::mem::swap(ui, &mut self.ui);
+
+                    let resp = f.show_dyn(self, &mut bg);
+
+                    std::mem::swap(ui, &mut self.ui);
+                    // std::mem::swap(&mut self.current_rect, &mut rect);
+                    std::mem::swap(&mut self.last_scroll_offset, &mut offset);
+                    self.current_viewport_content = stored_viewport_content;
+                    self.current_viewport = stored_viewport;
+
+                    resp
+                });
+                resp.inner
             } else {
                 std::mem::swap(&mut child_ui, &mut self.ui);
                 let resp = f.show_dyn(self, &mut bg);
@@ -834,7 +866,7 @@ pub struct Context {
 }
 
 /// Helper to show the inner content of a container.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TaffyContainerUi {
     layout: taffy::Layout,
     parent_rect: egui::Rect,
@@ -868,6 +900,14 @@ fn top_left(rect: &taffy::Rect<f32>) -> taffy::Point<f32> {
     taffy::Point {
         x: rect.left,
         y: rect.top,
+    }
+}
+
+#[inline]
+fn taffy_point_to_egui_pos(point: taffy::Point<f32>) -> egui::Pos2 {
+    egui::Pos2 {
+        x: point.x,
+        y: point.y,
     }
 }
 
@@ -1436,6 +1476,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
     }
 
     /// Add tui node as children to this node and draw simple group Frame background
+    /// using styling from egui
     #[inline]
     fn add_with_border<T>(self, f: impl FnOnce(&mut Tui) -> T) -> T {
         fn background(ui: &mut egui::Ui, container: &TaffyContainerUi) {
@@ -1455,6 +1496,79 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
         let return_values = self
             .with_border_style_from_egui_style()
             .add_with_background_ui(background, |tui, _| f(tui));
+        return_values.main
+    }
+
+    /// Add tui node as children to this node and draw simple group Frame background
+    /// using styling from taffy
+    #[inline]
+    fn add_with_taffy_border<T>(self, f: impl FnOnce(&mut Tui) -> T) -> T {
+        fn background(ui: &mut egui::Ui, container: &TaffyContainerUi) {
+            let visuals = ui.style().noninteractive();
+            let rect = container.full_container();
+            let border = container.layout.border;
+
+            // Background is transparent to events
+            let stroke = visuals.bg_stroke;
+            let bw = border.left;
+            if border.left == bw && border.right == bw && border.top == bw && border.bottom == bw {
+                if bw > 0. {
+                    ui.painter().rect_stroke(
+                        rect,
+                        visuals.corner_radius,
+                        egui::Stroke {
+                            width: bw,
+                            ..stroke
+                        },
+                        egui::StrokeKind::Inside,
+                    );
+                }
+                return;
+            }
+
+            if border.bottom > 0. {
+                ui.painter().hline(
+                    rect.left()..=rect.right(),
+                    rect.bottom() - (border.bottom / 2.).floor(),
+                    egui::Stroke {
+                        width: border.bottom,
+                        ..stroke
+                    },
+                );
+            }
+            if border.top > 0. {
+                ui.painter().hline(
+                    rect.left()..=rect.right(),
+                    rect.top() + (border.top / 2.).floor(),
+                    egui::Stroke {
+                        width: border.top,
+                        ..stroke
+                    },
+                );
+            }
+            if border.left > 0. {
+                ui.painter().vline(
+                    rect.left() + (border.left / 2.).floor(),
+                    rect.top()..=rect.bottom(),
+                    egui::Stroke {
+                        width: border.left,
+                        ..stroke
+                    },
+                );
+            }
+            if border.right > 0. {
+                ui.painter().vline(
+                    rect.right() - (border.right / 2.).floor(),
+                    rect.top()..=rect.bottom(),
+                    egui::Stroke {
+                        width: border.right,
+                        ..stroke
+                    },
+                );
+            }
+        }
+
+        let return_values = self.add_with_background_ui(background, |tui, _| f(tui));
         return_values.main
     }
 
