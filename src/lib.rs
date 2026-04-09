@@ -1,4 +1,3 @@
-#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
@@ -1099,9 +1098,34 @@ where
 
 ////////////////////////////////////////////////////////////////////////////////
 
+pub(crate) struct UiTree<T>(TaffyTree<T>);
+
+#[expect(unsafe_code, reason = "TaffyTree is safe as long as calc is not used")]
+/// SAFETY: Taffy Tree becomes thread unsafe when you use the calc feature, which we do not implement
+unsafe impl Send for UiTree<Context> {}
+
+#[expect(unsafe_code, reason = "TaffyTree is safe as long as calc is not used")]
+/// SAFETY: Taffy Tree becomes thread unsafe when you use the calc feature, which we do not implement
+unsafe impl Sync for UiTree<Context> {}
+
+impl<T> Deref for UiTree<T> {
+    type Target = TaffyTree<T>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> DerefMut for UiTree<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 /// Egui taffy layout state which stores calculated taffy node layout and hiarchy
 pub struct TaffyState {
-    taffy_tree: TaffyTree<Context>,
+    taffy_tree: UiTree<Context>,
 
     id_to_node_id: HashMap<egui::Id, NodeData>,
 
@@ -1118,7 +1142,7 @@ pub struct NodeData {
 impl TaffyState {
     fn new() -> Self {
         Self {
-            taffy_tree: TaffyTree::new(),
+            taffy_tree: UiTree(TaffyTree::new()),
             last_size: egui::Vec2::ZERO,
             id_to_node_id: HashMap::default(),
         }

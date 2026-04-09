@@ -1,10 +1,9 @@
 # egui_taffy: Egui Taffy Ui
 
 [![egui_version](https://img.shields.io/badge/egui-0.34-blue)](https://github.com/emilk/egui)
-[![taffy_version](https://img.shields.io/badge/taffy-0.7-blue)](https://github.com/DioxusLabs/taffy)
+[![taffy_version](https://img.shields.io/badge/taffy-0.10-blue)](https://github.com/DioxusLabs/taffy)
 [![Latest version](https://img.shields.io/crates/v/egui_taffy.svg)](https://crates.io/crates/egui_taffy)
 [![Documentation](https://docs.rs/egui_taffy/badge.svg)](https://docs.rs/egui_taffy)
-[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 [![License](https://img.shields.io/crates/l/egui_taffy.svg)](https://crates.io/crates/egui_taffy)
 
 Flexible egui layout library that supports CSS Block, Flexbox, Grid layouts. It uses high-performance [taffy](https://github.com/DioxusLabs/taffy) library under the hood.
@@ -17,6 +16,7 @@ This library is in active development and some breaking changes are expected, bu
 
 | egui_taffy | egui | taffy | MSRV           |
 |------------|------| ---   |----------------|
+| 0.12       | 0.34 | 0.10.0| 1.92           |
 | 0.11       | 0.34 | 0.7.7 | 1.92           |
 | 0.10       | 0.33 | 0.7.7 | 1.88           |
 | 0.9        | 0.32 | 0.7.7 | 1.85           |

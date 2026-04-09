@@ -1,6 +1,9 @@
-use taffy::prelude::{auto, length};
+use taffy::{
+    CompactLength,
+    prelude::{auto, length},
+};
 
-use crate::{tid, Tui, TuiBuilderLogic, TuiId};
+use crate::{Tui, TuiBuilderLogic, TuiId, tid};
 
 /// Required parameters to correctly draw grid with virtual rows
 pub struct VirtualGridRowHelperParams {
@@ -72,6 +75,7 @@ impl VirtualGridRowHelper {
             return;
         }
 
+        // 1-based grid_row counter
         let mut grid_row = header_row_count + 1;
 
         // Draw first row for reference
@@ -92,11 +96,12 @@ impl VirtualGridRowHelper {
 
             let style = state.taffy_tree().style(node_id).unwrap();
 
-            let gap = match style.gap.height {
-                taffy::LengthPercentage::Length(length) => length,
-                taffy::LengthPercentage::Percent(_) => {
-                    // TODO: Not supported yet
-                    0.
+            let gap = {
+                let raw = style.gap.height.into_raw();
+                match raw.tag() {
+                    CompactLength::LENGTH_TAG => raw.value(),
+                    CompactLength::PERCENT_TAG => 0.,
+                    _ => 0.,
                 }
             };
 
@@ -114,13 +119,10 @@ impl VirtualGridRowHelper {
                     for idx in 0..((grid_row - 1) as usize) {
                         if let Some(row_size) = detailed_grid_info.rows.sizes.get(idx) {
                             top_offset += row_size;
-                        } else {
-                            break;
                         }
+
                         if let Some(gutter) = detailed_grid_info.rows.gutters.get(idx) {
                             top_offset += gutter;
-                        } else {
-                            break;
                         }
                     }
 
@@ -162,17 +164,17 @@ impl VirtualGridRowHelper {
         )
         .clamp(visible_from, row_count);
 
-        // println!(
-        //     "{} {} {} | {} {} {} {} {}",
-        //     visible_from,
-        //     visible_to,
-        //     row_count,
-        //     row_height,
-        //     gap,
-        //     scroll_offset,
-        //     top_offset,
-        //     visible_rect_size
-        // );
+        println!(
+            "{} {} {} | {} {} {} {} {}",
+            visible_from,
+            visible_to,
+            row_count,
+            row_height,
+            gap,
+            scroll_offset,
+            top_offset,
+            visible_rect_size
+        );
 
         if visible_from > 1 {
             // Draw empty cell from 1..next_visible_from
