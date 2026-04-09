@@ -164,17 +164,17 @@ impl VirtualGridRowHelper {
         )
         .clamp(visible_from, row_count);
 
-        println!(
-            "{} {} {} | {} {} {} {} {}",
-            visible_from,
-            visible_to,
-            row_count,
-            row_height,
-            gap,
-            scroll_offset,
-            top_offset,
-            visible_rect_size
-        );
+        // println!(
+        //     "{} {} {} | {} {} {} {} {}",
+        //     visible_from,
+        //     visible_to,
+        //     row_count,
+        //     row_height,
+        //     gap,
+        //     scroll_offset,
+        //     top_offset,
+        //     visible_rect_size
+        // );
 
         if visible_from > 1 {
             // Draw empty cell from 1..next_visible_from

@@ -2,7 +2,7 @@
 
 ## 0.11.0
 
-* Upgraded taffy to 0.10.0
+* Upgraded taffy to 0.9.2
 * Sadly egui_taffy now uses unsafe code to handle taffy "calc" logic.
 
 ## 0.11.0

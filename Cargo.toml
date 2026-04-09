@@ -16,7 +16,7 @@ exclude = ["/.github", "./examples/web/"]
 stackbox = "0.2"
 egui = { version = "0.34.0", default-features = false }
 log = { version = "0.4", default-features = false }
-taffy = { version = "0.10.0", default-features = false, features = [
+taffy = { version = "0.9.2", default-features = false, features = [
   "taffy_tree",
   "detailed_layout_info",
 ] }
