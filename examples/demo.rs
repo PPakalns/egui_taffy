@@ -81,7 +81,7 @@ fn ui_side_panel(ui: &mut egui::Ui, state: &mut State) {
             .reserve_available_space()
             .style(taffy::Style {
                 flex_direction: taffy::FlexDirection::Column,
-                align_items: Some(taffy::AlignItems::Stretch),
+                align_items: taffy::AlignItems::STRETCH,
                 padding: length(4f32),
                 gap: length(2f32),
                 ..Default::default()
@@ -136,7 +136,7 @@ fn flex_wrap_demo(ui: &mut egui::Ui, state: &mut State) {
         padding: length(8f32),
         gap: length(8f32),
         flex_grow: 1.,
-        justify_content: Some(taffy::AlignContent::Center),
+        justify_content: taffy::AlignContent::CENTER,
         ..Default::default()
     };
 
@@ -147,7 +147,7 @@ fn flex_wrap_demo(ui: &mut egui::Ui, state: &mut State) {
                 .reserve_available_space() // Reserve full space of window for this layout
                 .style(taffy::Style {
                     flex_direction: taffy::FlexDirection::Column,
-                    align_items: Some(taffy::AlignItems::Stretch),
+                    align_items: taffy::AlignItems::STRETCH,
                     size: taffy::Size {
                         width: percent(1f32),
                         height: auto(),
@@ -173,7 +173,7 @@ fn flex_wrap_demo(ui: &mut egui::Ui, state: &mut State) {
 
                     // Provide full style
                     tui.style(taffy::Style {
-                        align_self: Some(taffy::AlignItems::Center),
+                        align_self: Some(taffy::AlignItems::CENTER),
                         ..Default::default()
                     })
                     .egui_layout(egui::Layout::default().with_cross_align(egui::Align::Center))
@@ -182,7 +182,7 @@ fn flex_wrap_demo(ui: &mut egui::Ui, state: &mut State) {
                     tui.style(default_style())
                         .mut_style(|style| {
                             // Modify one field of the style
-                            style.align_self = Some(taffy::AlignItems::End);
+                            style.align_self = Some(taffy::AlignItems::END);
                         })
                         .egui_layout(egui::Layout::default().with_cross_align(egui::Align::RIGHT))
                         .label("Right aligned text");
@@ -196,7 +196,7 @@ fn flex_wrap_demo(ui: &mut egui::Ui, state: &mut State) {
 
                     tui.style(taffy::Style {
                         flex_wrap: taffy::FlexWrap::Wrap,
-                        justify_items: Some(taffy::AlignItems::Stretch),
+                        justify_items: taffy::AlignItems::STRETCH,
                         ..default_style()
                     })
                     .add(|tui| {
@@ -218,8 +218,8 @@ fn flex_grid_demo(ui: &mut egui::Ui, state: &mut State) {
             // [`TuiBuilder::mut_style`] function.
             let align_flex_content_in_center = |style: &mut taffy::Style| {
                 // Align content in center in flexbox layout
-                style.justify_content = Some(taffy::JustifyContent::Center);
-                style.align_items = Some(taffy::AlignItems::Center);
+                style.justify_content = taffy::JustifyContent::CENTER;
+                style.align_items = taffy::AlignItems::CENTER;
             };
 
             // Initialize Tui layout (Taffy ui layout)
@@ -229,7 +229,14 @@ fn flex_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                     display: taffy::Display::Grid,
 
                     // All columns except last one has the same size
-                    grid_template_columns: vec![fr(1f32), fr(1f32), fr(1f32), fr(1f32), fr(1f32), fr(1.5f32)],
+                    grid_template_columns: vec![
+                        fr(1f32),
+                        fr(1f32),
+                        fr(1f32),
+                        fr(1f32),
+                        fr(1f32),
+                        fr(1.5f32),
+                    ],
                     // All rows has the same size
                     grid_template_rows: vec![repeat("auto-fill", vec![fr(1f32)])],
 
@@ -239,8 +246,8 @@ fn flex_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                     size: percent(1f32),
 
                     // Stretch grid cells by default to fill space
-                    align_items: Some(taffy::AlignItems::Stretch),
-                    justify_items: Some(taffy::AlignItems::Stretch),
+                    align_items: taffy::AlignItems::STRETCH,
+                    justify_items: taffy::AlignItems::STRETCH,
 
                     ..Default::default()
                 })
@@ -267,10 +274,10 @@ fn flex_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                     });
 
                     let align_list = [
-                        taffy::AlignItems::Start,
-                        taffy::AlignItems::Center,
-                        taffy::AlignItems::End,
-                        taffy::AlignItems::Stretch,
+                        taffy::AlignItems::START,
+                        taffy::AlignItems::CENTER,
+                        taffy::AlignItems::END,
+                        taffy::AlignItems::STRETCH,
                     ];
 
                     tui.add(|_tui| {
@@ -280,13 +287,13 @@ fn flex_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                     for header in align_list {
                         tui.mut_style(align_flex_content_in_center)
                             .add_with_border(|tui| {
-                                tui.label(format!("{:?}", header));
+                                tui.label(align_items_name(header));
                             });
                     }
 
                     for align_item in align_list {
                         tui.add_with_border(|tui| {
-                            tui.label(format!("{:?}", align_item));
+                            tui.label(align_items_name(align_item));
                         });
 
                         for justify_item in align_list {
@@ -299,7 +306,11 @@ fn flex_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                             })
                             .mut_style(align_flex_content_in_center)
                             .add_with_border(|tui| {
-                                tui.label(format!("{:?} {:?}", align_item, justify_item));
+                                tui.label(format!(
+                                    "{} {}",
+                                    align_items_name(align_item),
+                                    align_items_name(justify_item)
+                                ));
                             });
                         }
                     }
@@ -356,15 +367,15 @@ fn grow_demo(ui: &mut egui::Ui, state: &mut State) {
                 .style(taffy::Style {
                     flex_direction: taffy::FlexDirection::Column,
                     size: percent(1f32),
-                    justify_items: Some(taffy::AlignItems::Center),
-                    align_items: Some(taffy::AlignItems::End),
+                    justify_items: taffy::AlignItems::CENTER,
+                    align_items: taffy::AlignItems::END,
                     ..default_style()
                 })
                 .show(|tui| {
                     for grow in 0..4 {
                         tui.style(taffy::Style {
                             flex_grow: grow as f32,
-                            align_items: Some(taffy::AlignItems::Center),
+                            align_items: taffy::AlignItems::CENTER,
                             ..default_style()
                         })
                         .add_with_border(|tui| {
@@ -374,17 +385,17 @@ fn grow_demo(ui: &mut egui::Ui, state: &mut State) {
 
                     tui.style(taffy::Style {
                         flex_grow: 6.,
-                        align_self: Some(taffy::AlignItems::Stretch),
+                        align_self: Some(taffy::AlignItems::STRETCH),
 
-                        align_items: Some(taffy::AlignItems::Stretch),
+                        align_items: taffy::AlignItems::STRETCH,
                         ..default_style()
                     })
                     .add_with_border(|tui| {
                         for grow in 0..4 {
                             tui.style(taffy::Style {
                                 flex_grow: grow as f32,
-                                align_items: Some(taffy::AlignItems::Center),
-                                justify_content: Some(taffy::AlignContent::Center),
+                                align_items: taffy::AlignItems::CENTER,
+                                justify_content: taffy::AlignContent::CENTER,
                                 ..default_style()
                             })
                             .add_with_border(|tui| {
@@ -416,20 +427,20 @@ fn flex_demo(ui: &mut egui::Ui, state: &mut State) {
                         width: percent(1f32),
                         height: auto(),
                     },
-                    align_items: Some(taffy::AlignItems::Stretch),
+                    align_items: taffy::AlignItems::STRETCH,
                     max_size: percent(1f32),
                     gap: length(8f32),
                     ..Default::default()
                 })
                 .show(|tui| {
                     for (justify_content, flex_grow) in [
-                        (taffy::AlignContent::Start, 0.),
-                        (taffy::AlignContent::End, 0.),
-                        (taffy::AlignContent::Stretch, 0.),
-                        (taffy::AlignContent::Stretch, 1.),
-                        (taffy::AlignContent::Center, 0.),
-                        (taffy::AlignContent::SpaceBetween, 0.),
-                        (taffy::AlignContent::SpaceAround, 0.),
+                        (taffy::AlignContent::START, 0.),
+                        (taffy::AlignContent::END, 0.),
+                        (taffy::AlignContent::STRETCH, 0.),
+                        (taffy::AlignContent::STRETCH, 1.),
+                        (taffy::AlignContent::CENTER, 0.),
+                        (taffy::AlignContent::SPACE_BETWEEN, 0.),
+                        (taffy::AlignContent::SPACE_AROUND, 0.),
                     ] {
                         tui.style(taffy::Style {
                             flex_direction: taffy::FlexDirection::Row,
@@ -450,14 +461,17 @@ fn flex_demo(ui: &mut egui::Ui, state: &mut State) {
                                 ..Default::default()
                             })
                             .add(|tui| {
-                                tui.label(format!("Justify items: {:?}", justify_content));
+                                tui.label(format!(
+                                    "Justify items: {}",
+                                    align_content_name(justify_content)
+                                ));
                                 tui.label(format!("Flex grow: {:?}", flex_grow));
                                 tui.label("Align self:");
                             });
 
                             tui.style(taffy::Style {
                                 flex_direction: taffy::FlexDirection::Row,
-                                justify_content: Some(justify_content),
+                                justify_content: justify_content,
                                 flex_grow: 1.,
                                 min_size: taffy::Size {
                                     width: auto(),
@@ -467,17 +481,17 @@ fn flex_demo(ui: &mut egui::Ui, state: &mut State) {
                             })
                             .add_with_border(|tui| {
                                 for align in [
-                                    taffy::AlignItems::Start,
-                                    taffy::AlignItems::End,
-                                    taffy::AlignItems::Center,
-                                    taffy::AlignItems::Stretch,
+                                    taffy::AlignItems::START,
+                                    taffy::AlignItems::END,
+                                    taffy::AlignItems::CENTER,
+                                    taffy::AlignItems::STRETCH,
                                 ] {
                                     tui.style(taffy::Style {
                                         align_self: Some(align),
                                         flex_grow,
                                         ..Default::default()
                                     })
-                                    .ui_add(egui::Button::new(format!("{:?}", align)));
+                                    .ui_add(egui::Button::new(align_items_name(align)));
                                 }
                             });
                         });
@@ -527,7 +541,7 @@ fn button_demo(ui: &mut egui::Ui, state: &mut State) {
                         width: percent(1f32),
                         height: auto(),
                     },
-                    align_items: Some(taffy::AlignItems::Stretch),
+                    align_items: taffy::AlignItems::STRETCH,
                     max_size: percent(1f32),
                     gap: length(8f32),
                     padding: length(8f32),
@@ -535,16 +549,16 @@ fn button_demo(ui: &mut egui::Ui, state: &mut State) {
                 })
                 .show(|tui| {
                     let align_list = [
-                        taffy::AlignItems::Start,
-                        taffy::AlignItems::Center,
-                        taffy::AlignItems::End,
-                        taffy::AlignItems::Stretch,
+                        taffy::AlignItems::START,
+                        taffy::AlignItems::CENTER,
+                        taffy::AlignItems::END,
+                        taffy::AlignItems::STRETCH,
                     ];
 
                     let response = tui
                         .style(taffy::Style {
                             flex_direction: taffy::FlexDirection::Column,
-                            align_items: Some(taffy::AlignItems::Center),
+                            align_items: taffy::AlignItems::CENTER,
                             padding: length(8f32),
                             ..Default::default()
                         })
@@ -560,10 +574,10 @@ fn button_demo(ui: &mut egui::Ui, state: &mut State) {
                                 })
                                 .add(|tui| {
                                     tui.style(taffy::Style {
-                                        align_self: Some(taffy::AlignItems::Center),
+                                        align_self: Some(taffy::AlignItems::CENTER),
                                         ..Default::default()
                                     })
-                                    .label(format!("{:?}", align_item));
+                                    .label(align_items_name(align_item));
                                 });
                             }
                         });
@@ -579,7 +593,7 @@ fn button_demo(ui: &mut egui::Ui, state: &mut State) {
                     let response = tui
                         .style(taffy::Style {
                             flex_direction: taffy::FlexDirection::Column,
-                            align_items: Some(taffy::AlignItems::Center),
+                            align_items: taffy::AlignItems::CENTER,
                             padding: length(8f32),
                             ..Default::default()
                         })
@@ -595,10 +609,10 @@ fn button_demo(ui: &mut egui::Ui, state: &mut State) {
                                 })
                                 .add(|tui| {
                                     tui.style(taffy::Style {
-                                        align_self: Some(taffy::AlignItems::Center),
+                                        align_self: Some(taffy::AlignItems::CENTER),
                                         ..Default::default()
                                     })
-                                    .label(format!("{:?}", align_item));
+                                    .label(align_items_name(align_item));
                                 });
                             }
                         });
@@ -636,7 +650,7 @@ fn overflow_demo(ui: &mut egui::Ui, state: &mut State) {
                     });
                     tui.style(taffy::Style {
                         flex_direction: taffy::FlexDirection::Row,
-                        align_items: Some(taffy::AlignItems::Center),
+                        align_items: taffy::AlignItems::CENTER,
                         gap: length(16f32),
                         ..Default::default()
                     })
@@ -705,8 +719,8 @@ fn grid_sticky(ui: &mut egui::Ui, state: &mut State) {
 
                     let cell_style = taffy::Style {
                         flex_direction: taffy::FlexDirection::Column,
-                        align_items: Some(taffy::AlignItems::Center),
-                        justify_content: Some(taffy::AlignContent::SpaceAround),
+                        align_items: taffy::AlignItems::CENTER,
+                        justify_content: taffy::AlignContent::SPACE_AROUND,
                         padding: length(16f32),
                         ..Default::default()
                     };
@@ -722,8 +736,8 @@ fn grid_sticky(ui: &mut egui::Ui, state: &mut State) {
                         size: percent(1f32),
                         max_size: percent(1f32),
                         display: taffy::Display::Grid,
-                        align_items: Some(taffy::AlignItems::Stretch),
-                        justify_items: Some(taffy::AlignItems::Stretch),
+                        align_items: taffy::AlignItems::STRETCH,
+                        justify_items: taffy::AlignItems::STRETCH,
                         grid_template_rows: vec![auto(); (rows + 1) as usize],
                         grid_template_columns: vec![auto(); (columns + 1) as usize],
                         ..Default::default()
@@ -849,7 +863,7 @@ fn virtual_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                                             style.padding = length(2f32);
                                             style.grid_column = span(2);
                                             style.justify_content =
-                                                Some(taffy::AlignContent::SpaceAround);
+                                                taffy::AlignContent::SPACE_AROUND;
                                         })
                                         .button(|tui| {
                                             tui.label(format!("Cell {} - Colspan 2", info.idx))
@@ -863,7 +877,7 @@ fn virtual_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                                 flex_direction: taffy::FlexDirection::Column,
                                 grid_row: style_helpers::line(1),
                                 padding: length(4f32),
-                                align_items: Some(taffy::AlignItems::Center),
+                                align_items: taffy::AlignItems::CENTER,
                                 grid_column: span(2),
                                 ..Default::default()
                             })
@@ -904,8 +918,8 @@ fn custom_background_demo(ui: &mut egui::Ui, state: &mut State) {
                 .reserve_available_space()
                 .style(taffy::Style {
                     flex_direction: taffy::FlexDirection::Column,
-                    justify_content: Some(taffy::JustifyContent::Center),
-                    align_items: Some(taffy::AlignItems::Center),
+                    justify_content: taffy::JustifyContent::CENTER,
+                    align_items: taffy::AlignItems::CENTER,
                     max_size: percent(1f32),
                     size: percent(1f32),
                     gap: length(10f32),
@@ -917,8 +931,8 @@ fn custom_background_demo(ui: &mut egui::Ui, state: &mut State) {
                             height: length(200f32),
                             width: length(200f32),
                         },
-                        justify_content: Some(taffy::JustifyContent::Center),
-                        align_items: Some(taffy::AlignItems::Center),
+                        justify_content: taffy::JustifyContent::CENTER,
+                        align_items: taffy::AlignItems::CENTER,
                         padding: length(20f32),
                         ..Default::default()
                     };
@@ -1135,8 +1149,8 @@ fn holy_grail_demo(ui: &mut egui::Ui, state: &mut State) {
                         grid_row: style_helpers::line(1),
                         grid_column: span(3),
                         display: taffy::Display::Flex,
-                        justify_content: Some(taffy::JustifyContent::Center),
-                        align_items: Some(taffy::AlignItems::Center),
+                        justify_content: taffy::JustifyContent::CENTER,
+                        align_items: taffy::AlignItems::CENTER,
 
                         ..Default::default()
                     };
@@ -1144,32 +1158,32 @@ fn holy_grail_demo(ui: &mut egui::Ui, state: &mut State) {
                         grid_row: style_helpers::line(2),
                         grid_column: style_helpers::line(1),
                         display: taffy::Display::Flex,
-                        justify_content: Some(taffy::JustifyContent::Center),
-                        align_items: Some(taffy::AlignItems::Center),
+                        justify_content: taffy::JustifyContent::CENTER,
+                        align_items: taffy::AlignItems::CENTER,
                         ..Default::default()
                     };
                     let content_area = taffy::Style {
                         grid_row: style_helpers::line(2),
                         grid_column: style_helpers::line(2),
                         display: taffy::Display::Flex,
-                        justify_content: Some(taffy::JustifyContent::Center),
-                        align_items: Some(taffy::AlignItems::Center),
+                        justify_content: taffy::JustifyContent::CENTER,
+                        align_items: taffy::AlignItems::CENTER,
                         ..Default::default()
                     };
                     let right_sidebar = taffy::Style {
                         grid_row: style_helpers::line(2),
                         grid_column: style_helpers::line(3),
                         display: taffy::Display::Flex,
-                        justify_content: Some(taffy::JustifyContent::Center),
-                        align_items: Some(taffy::AlignItems::Center),
+                        justify_content: taffy::JustifyContent::CENTER,
+                        align_items: taffy::AlignItems::CENTER,
                         ..Default::default()
                     };
                     let footer = taffy::Style {
                         grid_row: style_helpers::line(3),
                         grid_column: span(3),
                         display: taffy::Display::Flex,
-                        justify_content: Some(taffy::JustifyContent::Center),
-                        align_items: Some(taffy::AlignItems::Center),
+                        justify_content: taffy::JustifyContent::CENTER,
+                        align_items: taffy::AlignItems::CENTER,
                         ..Default::default()
                     };
 
@@ -1216,4 +1230,14 @@ fn main() -> eframe::Result {
         Default::default(),
         Box::new(|_cc| Ok(Box::new(MyApp::default()))),
     )
+}
+
+/// Short display name for [`taffy::AlignItems`] / [`taffy::JustifyItems`] (avoids verbose Debug).
+fn align_items_name(align: taffy::AlignItems) -> String {
+    format!("{:?}", align.keyword)
+}
+
+/// Short display name for [`taffy::AlignContent`] / [`taffy::JustifyContent`] (avoids verbose Debug).
+fn align_content_name(align: taffy::AlignContent) -> String {
+    format!("{:?}", align.keyword)
 }

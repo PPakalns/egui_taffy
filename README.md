@@ -1,7 +1,7 @@
 # egui_taffy: Egui Taffy Ui
 
 [![egui_version](https://img.shields.io/badge/egui-0.37-blue)](https://github.com/emilk/egui)
-[![taffy_version](https://img.shields.io/badge/taffy-0.9-blue)](https://github.com/DioxusLabs/taffy)
+[![taffy_version](https://img.shields.io/badge/taffy-0.15-blue)](https://github.com/DioxusLabs/taffy)
 [![Latest version](https://img.shields.io/crates/v/egui_taffy.svg)](https://crates.io/crates/egui_taffy)
 [![Documentation](https://docs.rs/egui_taffy/badge.svg)](https://docs.rs/egui_taffy)
 [![License](https://img.shields.io/crates/l/egui_taffy.svg)](https://crates.io/crates/egui_taffy)
@@ -16,6 +16,7 @@ This library is in active development and some breaking changes are expected, bu
 
 | egui_taffy | egui | taffy | MSRV           |
 |------------|------| ---   |----------------|
+| 0.16       | 0.37 | 0.15  | 1.95           |
 | 0.15       | 0.37 | 0.9.2 | 1.95           |
 | 0.14       | 0.36 | 0.9.2 | 1.95           |
 | 0.13       | 0.35 | 0.9.2 | 1.92           |
@@ -49,7 +50,7 @@ egui::Window::new("Flex wrap demo").show(ctx, |ui| {
         .reserve_available_space() // Reserve full space of this window for layout
         .style(Style {
             flex_direction: taffy::FlexDirection::Column,
-            align_items: Some(taffy::AlignItems::Stretch),
+            align_items: taffy::AlignItems::STRETCH,
             ..default_style()
         })
         .show(|tui| {
@@ -71,7 +72,7 @@ egui::Window::new("Flex wrap demo").show(ctx, |ui| {
 
             // Provide full style
             tui.style(Style {
-                align_self: Some(taffy::AlignItems::Center),
+                align_self: Some(taffy::AlignItems::CENTER),
                 ..Default::default()
             })
             .label("Centered text");
@@ -79,7 +80,7 @@ egui::Window::new("Flex wrap demo").show(ctx, |ui| {
             tui.style(default_style())
                 .mut_style(|style| {
                     // Modify one field of the style
-                    style.align_self = Some(taffy::AlignItems::End);
+                    style.align_self = Some(taffy::AlignItems::END);
                 })
                 .label("Right aligned text");
 
@@ -92,7 +93,7 @@ egui::Window::new("Flex wrap demo").show(ctx, |ui| {
 
             tui.style(Style {
                 flex_wrap: taffy::FlexWrap::Wrap,
-                justify_items: Some(taffy::AlignItems::Stretch),
+                justify_items: taffy::AlignItems::STRETCH,
                 ..default_style()
             })
             .add(|tui| {

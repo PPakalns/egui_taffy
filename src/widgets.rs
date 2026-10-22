@@ -39,7 +39,7 @@ impl TuiWidget for TaffySeparator {
         };
 
         tui = tui.mut_style(|style| {
-            style.align_self = Some(taffy::AlignItems::Stretch);
+            style.align_self = Some(taffy::AlignItems::STRETCH);
             let default_separator_space_value = 6.; // Taken from egui::ui
             let space = stroke.width.max(default_separator_space_value);
 
@@ -55,7 +55,7 @@ impl TuiWidget for TaffySeparator {
             };
             style.min_size = size;
             style.max_size = size;
-            style.size = size;
+            style.size = size.map(Into::into);
         });
 
         let layout = match is_horizontal {

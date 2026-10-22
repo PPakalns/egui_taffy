@@ -8,6 +8,7 @@ use std::sync::Arc;
 use egui::util::IdTypeMap;
 use egui::{AsIdSalt, Pos2, Response, Ui, UiBuilder};
 use parking_lot::{ArcMutexGuard, RawMutex};
+use taffy::compute_leaf_layout;
 use taffy::prelude::*;
 use widgets::TaffySeparator;
 
@@ -134,10 +135,10 @@ impl<'a> TuiInitializer<'a> {
 
         if self.allocated_rect.is_none() {
             // Space was not allocated yet, allocate used space
-            let size = output.container.layout.content_size;
+            let content = output.container.layout.scrollable_overflow_rect;
             ui.allocate_space(egui::Vec2 {
-                x: size.width,
-                y: size.height,
+                x: content.right,
+                y: content.bottom,
             });
         }
         output.inner
@@ -461,23 +462,12 @@ impl Tui {
                 }
 
                 let resp = scroll.show_viewport(&mut child_ui, |ui, viewport_rect| {
-                    // Allocate expected size for scroll area to correctly calculate inner size
-                    let content_size = self.taffy_container.layout.content_size;
-                    let content_size = egui::Vec2::new(content_size.width, content_size.height);
-                    // TODO: Why this is needed?
-                    // Looks like taffy content size takes into account border sides
-                    //
-                    // Taffy bug or what?
+                    // Allocate expected size for scroll area to correctly calculate inner size.
+                    // taffy 0.15+ scrollable_overflow_rect is relative to the padding-box
+                    // scroll origin, so right/bottom are already the content extent.
+                    let content = self.taffy_container.layout.scrollable_overflow_rect;
                     ui.set_min_size(
-                        (
-                            content_size
-                                - taffy_point_to_egui_pos(top_left(
-                                    &self.taffy_container.layout.border,
-                                ))
-                                .to_vec2()
-                            // * (!scroll_in_directions).to_vec2()
-                        )
-                        .max(egui::Vec2::ZERO),
+                        egui::Vec2::new(content.right, content.bottom).max(egui::Vec2::ZERO),
                     );
 
                     let rect = ui.min_rect();
@@ -637,72 +627,57 @@ impl Tui {
                 .compute_layout_with_measure(
                     current_node,
                     available_space,
-                    |_known_size: Size<Option<f32>>,
-                     available_space: Size<AvailableSpace>,
-                     _id,
-                     context,
-                     _style|
-                     -> Size<f32> {
-                        let context = context.copied().unwrap_or(Context {
-                            min_size: egui::Vec2::ZERO,
-                            max_size: egui::Vec2::ZERO,
-                            infinite: egui::Vec2b::FALSE,
-                        });
+                    |inputs, _id, context, style| {
+                        compute_leaf_layout(inputs, style, |_, _| 0.0, |_known_size, available_space| {
+                            let context = context.copied().unwrap_or(Context {
+                                min_size: egui::Vec2::ZERO,
+                                max_size: egui::Vec2::ZERO,
+                                infinite: egui::Vec2b::FALSE,
+                            });
 
-                        let Context {
-                            mut min_size,
-                            mut max_size,
-                            infinite,
-                        } = context;
+                            let Context {
+                                mut min_size,
+                                mut max_size,
+                                infinite,
+                            } = context;
 
-                        // if scroll_area {
-                        //     min_size = egui::Vec2::ZERO;
-                        // }
-
-                        if min_size.any_nan() {
-                            min_size = egui::Vec2::ZERO;
-                        }
-                        if max_size.any_nan() {
-                            max_size = root_rect.size();
-                        }
-
-                        let max_size = egui::Vec2 {
-                            x: if infinite.x {
-                                root_rect.width()
-                            } else {
-                                max_size.x
-                            },
-                            y: if infinite.y {
-                                root_rect.height()
-                            } else {
-                                max_size.y
-                            },
-                        };
-
-                        let width = match available_space.width {
-                            AvailableSpace::Definite(num) => {
-                                num.clamp(min_size.x, max_size.x.max(min_size.x))
+                            if min_size.any_nan() {
+                                min_size = egui::Vec2::ZERO;
                             }
-                            AvailableSpace::MinContent => min_size.x,
-                            AvailableSpace::MaxContent => max_size.x,
-                        };
-                        let height = match available_space.height {
-                            AvailableSpace::Definite(num) => {
-                                num.clamp(min_size.y, max_size.y.max(min_size.y))
+                            if max_size.any_nan() {
+                                max_size = root_rect.size();
                             }
-                            AvailableSpace::MinContent => min_size.y,
-                            AvailableSpace::MaxContent => max_size.y,
-                        };
 
-                        #[allow(clippy::let_and_return)]
-                        let final_size = Size { width, height };
+                            let max_size = egui::Vec2 {
+                                x: if infinite.x {
+                                    root_rect.width()
+                                } else {
+                                    max_size.x
+                                },
+                                y: if infinite.y {
+                                    root_rect.height()
+                                } else {
+                                    max_size.y
+                                },
+                            };
 
-                        // println!(
-                        //     "{:?} {:?} {:?} {:?} {:?} {:?}",
-                        //     _id, min_size, max_size, available_space, final_size, _known_size,
-                        // );
+                            let width = match available_space.width {
+                                AvailableSpace::Definite(num) => {
+                                    num.clamp(min_size.x, max_size.x.max(min_size.x))
+                                }
+                                AvailableSpace::MinContent => min_size.x,
+                                AvailableSpace::MaxContent => max_size.x,
+                            };
+                            let height = match available_space.height {
+                                AvailableSpace::Definite(num) => {
+                                    num.clamp(min_size.y, max_size.y.max(min_size.y))
+                                }
+                                AvailableSpace::MinContent => min_size.y,
+                                AvailableSpace::MaxContent => max_size.y,
+                            };
 
-                        final_size
+                            Size { width, height }
+                        })
                     },
                 )
                 .unwrap();

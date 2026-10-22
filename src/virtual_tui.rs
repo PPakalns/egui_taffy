@@ -105,7 +105,7 @@ impl VirtualGridRowHelper {
                 }
             };
 
-            let mut top_offset = match style.overflow.y {
+            let top_offset = match style.overflow.y {
                 taffy::Overflow::Visible | taffy::Overflow::Clip | taffy::Overflow::Hidden => {
                     min_location
                 }
@@ -115,23 +115,14 @@ impl VirtualGridRowHelper {
 
             match layout_detailed_info {
                 taffy::DetailedLayoutInfo::Grid(detailed_grid_info) => {
-                    // Calculate header offset
-                    for idx in 0..((grid_row - 1) as usize) {
-                        if let Some(row_size) = detailed_grid_info.rows.sizes.get(idx) {
-                            top_offset += row_size;
-                        }
-
-                        if let Some(gutter) = detailed_grid_info.rows.gutters.get(idx) {
-                            top_offset += gutter;
-                        }
-                    }
-
-                    let row_height = detailed_grid_info
-                        .rows
-                        .sizes
-                        .get((grid_row - 1) as usize)
-                        .copied()
-                        .unwrap_or(20.);
+                    let rows = &detailed_grid_info.rows.positions;
+                    let row_idx = (grid_row - 1) as usize;
+                    let (top_offset, row_height) = if let Some(pos) = rows.get(row_idx) {
+                        let first_start = rows.first().map(|p| p.start).unwrap_or(0.);
+                        (top_offset + (pos.start - first_start), pos.end - pos.start)
+                    } else {
+                        (top_offset, 20.)
+                    };
 
                     (top_offset, row_height, gap)
                 }
@@ -192,7 +183,7 @@ impl VirtualGridRowHelper {
             tui.id("top_virtual")
                 .style(taffy::Style {
                     min_size: size,
-                    size,
+                    size: size.map(Into::into),
                     max_size: size,
                     grid_row: taffy::style_helpers::line(grid_row as i16),
                     ..Default::default()
@@ -230,7 +221,7 @@ impl VirtualGridRowHelper {
             tui.id("bottom_virtual")
                 .style(taffy::Style {
                     min_size: size,
-                    size,
+                    size: size.map(Into::into),
                     max_size: size,
                     grid_row: taffy::style_helpers::line(grid_row as i16),
                     ..Default::default()
