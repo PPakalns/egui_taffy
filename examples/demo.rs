@@ -76,14 +76,14 @@ impl App for MyApp {
 }
 
 fn ui_side_panel(ui: &mut egui::Ui, state: &mut State) {
-    egui::panel::Panel::left("panel").show_inside(ui, |ui| {
-        tui(ui, ui.id().with("side_panel"))
+    egui::panel::Panel::left("panel").show(ui, |ui| {
+        tui(ui, ui.scope_id().with("side_panel"))
             .reserve_available_space()
             .style(taffy::Style {
                 flex_direction: taffy::FlexDirection::Column,
                 align_items: Some(taffy::AlignItems::Stretch),
-                padding: length(4.),
-                gap: length(2.),
+                padding: length(4f32),
+                gap: length(2f32),
                 ..Default::default()
             })
             .show(|tui| {
@@ -116,7 +116,7 @@ fn ui_side_panel(ui: &mut egui::Ui, state: &mut State) {
                 ] {
                     if tui
                         .style(taffy::Style {
-                            padding: length(4.),
+                            padding: length(4f32),
                             ..Default::default()
                         })
                         .selectable(*show, |tui| {
@@ -133,8 +133,8 @@ fn ui_side_panel(ui: &mut egui::Ui, state: &mut State) {
 
 fn flex_wrap_demo(ui: &mut egui::Ui, state: &mut State) {
     let default_style = || taffy::Style {
-        padding: length(8.),
-        gap: length(8.),
+        padding: length(8f32),
+        gap: length(8f32),
         flex_grow: 1.,
         justify_content: Some(taffy::AlignContent::Center),
         ..Default::default()
@@ -143,13 +143,13 @@ fn flex_wrap_demo(ui: &mut egui::Ui, state: &mut State) {
     egui::Window::new("Flex wrap demo")
         .open(&mut state.show_flex_wrap_demo)
         .show(ui.ctx(), |ui| {
-            tui(ui, ui.id().with("demo"))
+            tui(ui, ui.scope_id().with("demo"))
                 .reserve_available_space() // Reserve full space of window for this layout
                 .style(taffy::Style {
                     flex_direction: taffy::FlexDirection::Column,
                     align_items: Some(taffy::AlignItems::Stretch),
                     size: taffy::Size {
-                        width: percent(1.),
+                        width: percent(1f32),
                         height: auto(),
                     },
 
@@ -223,20 +223,20 @@ fn flex_grid_demo(ui: &mut egui::Ui, state: &mut State) {
             };
 
             // Initialize Tui layout (Taffy ui layout)
-            tui(ui, "grid")
+            tui(ui, ui.scope_id().with("grid"))
                 .reserve_available_space()
                 .style(taffy::Style {
                     display: taffy::Display::Grid,
 
                     // All columns except last one has the same size
-                    grid_template_columns: vec![fr(1.), fr(1.), fr(1.), fr(1.), fr(1.), fr(1.5)],
+                    grid_template_columns: vec![fr(1f32), fr(1f32), fr(1f32), fr(1f32), fr(1f32), fr(1.5f32)],
                     // All rows has the same size
-                    grid_template_rows: vec![repeat("auto-fill", vec![fr(1.)])],
+                    grid_template_rows: vec![repeat("auto-fill", vec![fr(1f32)])],
 
-                    gap: length(8.),
+                    gap: length(8f32),
 
                     // Fill all available parent space
-                    size: percent(1.),
+                    size: percent(1f32),
 
                     // Stretch grid cells by default to fill space
                     align_items: Some(taffy::AlignItems::Stretch),
@@ -294,7 +294,7 @@ fn flex_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                                 justify_self: Some(justify_item),
                                 align_self: Some(align_item),
 
-                                padding: length(4.),
+                                padding: length(4f32),
                                 ..Default::default()
                             })
                             .mut_style(align_flex_content_in_center)
@@ -351,11 +351,11 @@ fn grow_demo(ui: &mut egui::Ui, state: &mut State) {
             };
 
             // taffy based ui
-            tui(ui, ui.id().with("demo"))
+            tui(ui, ui.scope_id().with("demo"))
                 .reserve_available_space()
                 .style(taffy::Style {
                     flex_direction: taffy::FlexDirection::Column,
-                    size: percent(1.),
+                    size: percent(1f32),
                     justify_items: Some(taffy::AlignItems::Center),
                     align_items: Some(taffy::AlignItems::End),
                     ..default_style()
@@ -403,22 +403,22 @@ fn flex_demo(ui: &mut egui::Ui, state: &mut State) {
         .default_width(500.)
         .show(ui.ctx(), |ui| {
             let default_style = || taffy::Style {
-                gap: length(8.),
-                padding: length(8.),
+                gap: length(8f32),
+                padding: length(8f32),
                 ..Default::default()
             };
 
-            tui(ui, ui.id().with("demo"))
+            tui(ui, ui.scope_id().with("demo"))
                 .reserve_available_width()
                 .style(taffy::Style {
                     flex_direction: taffy::FlexDirection::Column,
                     min_size: taffy::Size {
-                        width: percent(1.),
+                        width: percent(1f32),
                         height: auto(),
                     },
                     align_items: Some(taffy::AlignItems::Stretch),
-                    max_size: percent(1.),
-                    gap: length(8.),
+                    max_size: percent(1f32),
+                    gap: length(8f32),
                     ..Default::default()
                 })
                 .show(|tui| {
@@ -435,7 +435,7 @@ fn flex_demo(ui: &mut egui::Ui, state: &mut State) {
                             flex_direction: taffy::FlexDirection::Row,
                             min_size: taffy::Size {
                                 width: auto(),
-                                height: length(100.),
+                                height: length(100f32),
                             },
                             ..default_style()
                         })
@@ -443,7 +443,7 @@ fn flex_demo(ui: &mut egui::Ui, state: &mut State) {
                             tui.style(taffy::Style {
                                 flex_direction: taffy::FlexDirection::Column,
                                 size: taffy::Size {
-                                    width: length(200.),
+                                    width: length(200f32),
                                     height: auto(),
                                 },
                                 flex_shrink: 0.,
@@ -461,7 +461,7 @@ fn flex_demo(ui: &mut egui::Ui, state: &mut State) {
                                 flex_grow: 1.,
                                 min_size: taffy::Size {
                                     width: auto(),
-                                    height: length(100.),
+                                    height: length(100f32),
                                 },
                                 ..default_style()
                             })
@@ -519,18 +519,18 @@ fn button_demo(ui: &mut egui::Ui, state: &mut State) {
         .scroll(Vec2b { x: true, y: true })
         .open(&mut state.show_button_demo)
         .show(ui.ctx(), |ui| {
-            tui(ui, ui.id().with("button demo"))
+            tui(ui, ui.scope_id().with("button demo"))
                 .reserve_available_width()
                 .style(taffy::Style {
                     flex_direction: taffy::FlexDirection::Column,
                     min_size: taffy::Size {
-                        width: percent(1.),
+                        width: percent(1f32),
                         height: auto(),
                     },
                     align_items: Some(taffy::AlignItems::Stretch),
-                    max_size: percent(1.),
-                    gap: length(8.),
-                    padding: length(8.),
+                    max_size: percent(1f32),
+                    gap: length(8f32),
+                    padding: length(8f32),
                     ..Default::default()
                 })
                 .show(|tui| {
@@ -545,7 +545,7 @@ fn button_demo(ui: &mut egui::Ui, state: &mut State) {
                         .style(taffy::Style {
                             flex_direction: taffy::FlexDirection::Column,
                             align_items: Some(taffy::AlignItems::Center),
-                            padding: length(8.),
+                            padding: length(8f32),
                             ..Default::default()
                         })
                         .button(|tui| {
@@ -555,7 +555,7 @@ fn button_demo(ui: &mut egui::Ui, state: &mut State) {
                                 tui.style(taffy::Style {
                                     flex_direction: taffy::FlexDirection::Column,
                                     align_self: Some(align_item),
-                                    padding: length(4.),
+                                    padding: length(4f32),
                                     ..Default::default()
                                 })
                                 .add(|tui| {
@@ -580,7 +580,7 @@ fn button_demo(ui: &mut egui::Ui, state: &mut State) {
                         .style(taffy::Style {
                             flex_direction: taffy::FlexDirection::Column,
                             align_items: Some(taffy::AlignItems::Center),
-                            padding: length(8.),
+                            padding: length(8f32),
                             ..Default::default()
                         })
                         .selectable(params.selected, |tui| {
@@ -590,7 +590,7 @@ fn button_demo(ui: &mut egui::Ui, state: &mut State) {
                                 tui.style(taffy::Style {
                                     flex_direction: taffy::FlexDirection::Column,
                                     align_self: Some(align_item),
-                                    padding: length(4.),
+                                    padding: length(4f32),
                                     ..Default::default()
                                 })
                                 .add(|tui| {
@@ -616,11 +616,11 @@ fn overflow_demo(ui: &mut egui::Ui, state: &mut State) {
         .scroll(Vec2b { x: false, y: true })
         .open(&mut state.show_overflow_demo)
         .show(ui.ctx(), |ui| {
-            tui(ui, ui.id().with("overflow demo"))
+            tui(ui, ui.scope_id().with("overflow demo"))
                 .reserve_available_width()
                 .style(taffy::Style {
                     flex_direction: taffy::FlexDirection::Column,
-                    gap: length(16.),
+                    gap: length(16f32),
                     ..Default::default()
                 })
                 .show(|tui| {
@@ -637,7 +637,7 @@ fn overflow_demo(ui: &mut egui::Ui, state: &mut State) {
                     tui.style(taffy::Style {
                         flex_direction: taffy::FlexDirection::Row,
                         align_items: Some(taffy::AlignItems::Center),
-                        gap: length(16.),
+                        gap: length(16f32),
                         ..Default::default()
                     })
                     .add(|tui| {
@@ -654,15 +654,15 @@ fn overflow_demo(ui: &mut egui::Ui, state: &mut State) {
                                     y: overflow,
                                 },
                                 size: taffy::Size {
-                                    height: length(200.),
+                                    height: length(200f32),
                                     width: auto(),
                                 },
-                                padding: length(6.),
+                                padding: length(6f32),
                                 border: taffy::Rect {
-                                    left: length(20.),
-                                    right: length(40.),
-                                    top: length(20.),
-                                    bottom: length(40.),
+                                    left: length(20f32),
+                                    right: length(40f32),
+                                    top: length(20f32),
+                                    bottom: length(40f32),
                                 },
                                 ..Default::default()
                             })
@@ -693,10 +693,10 @@ fn grid_sticky(ui: &mut egui::Ui, state: &mut State) {
         .scroll(Vec2b::FALSE)
         .open(&mut state.show_grid_sticky_demo)
         .show(ui.ctx(), |ui| {
-            tui(ui, ui.id().with("sticky grid demo"))
+            tui(ui, ui.scope_id().with("sticky grid demo"))
                 .reserve_available_space()
                 .style(taffy::Style {
-                    size: percent(1.),
+                    size: percent(1f32),
                     ..Default::default()
                 })
                 .show(|tui| {
@@ -707,7 +707,7 @@ fn grid_sticky(ui: &mut egui::Ui, state: &mut State) {
                         flex_direction: taffy::FlexDirection::Column,
                         align_items: Some(taffy::AlignItems::Center),
                         justify_content: Some(taffy::AlignContent::SpaceAround),
-                        padding: length(16.),
+                        padding: length(16f32),
                         ..Default::default()
                     };
 
@@ -719,8 +719,8 @@ fn grid_sticky(ui: &mut egui::Ui, state: &mut State) {
                             x: taffy::Overflow::Scroll,
                             y: taffy::Overflow::Scroll,
                         },
-                        size: percent(1.),
-                        max_size: percent(1.),
+                        size: percent(1f32),
+                        max_size: percent(1f32),
                         display: taffy::Display::Grid,
                         align_items: Some(taffy::AlignItems::Stretch),
                         justify_items: Some(taffy::AlignItems::Stretch),
@@ -792,12 +792,12 @@ fn virtual_grid_demo(ui: &mut egui::Ui, state: &mut State) {
     egui::Window::new("Virtual grid row demo")
         .open(&mut state.show_virtual_grid_demo)
         .show(ui.ctx(), |ui| {
-            tui(ui, ui.id().with("virtual_grid"))
+            tui(ui, ui.scope_id().with("virtual_grid"))
                 .reserve_available_space()
                 .style(taffy::Style {
                     flex_direction: taffy::FlexDirection::Column,
-                    size: percent(1.),
-                    max_size: percent(1.),
+                    size: percent(1f32),
+                    max_size: percent(1f32),
                     ..Default::default()
                 })
                 .show(|tui| {
@@ -809,10 +809,10 @@ fn virtual_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                         },
                         grid_template_columns: vec![auto(), auto()],
                         size: taffy::Size {
-                            width: percent(1.),
+                            width: percent(1f32),
                             height: auto(),
                         },
-                        max_size: percent(1.),
+                        max_size: percent(1f32),
                         grid_auto_rows: vec![min_content()],
                         ..Default::default()
                     })
@@ -835,7 +835,7 @@ fn virtual_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                                             .id(idgen())
                                             .mut_style(&mut_grid_row_param)
                                             .mut_style(|style| {
-                                                style.padding = length(2.);
+                                                style.padding = length(2f32);
                                             })
                                             .button(|tui| {
                                                 tui.label(format!("Cell {} {}", info.idx, cidx))
@@ -846,7 +846,7 @@ fn virtual_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                                         .id(idgen())
                                         .mut_style(&mut_grid_row_param)
                                         .mut_style(|style| {
-                                            style.padding = length(2.);
+                                            style.padding = length(2f32);
                                             style.grid_column = span(2);
                                             style.justify_content =
                                                 Some(taffy::AlignContent::SpaceAround);
@@ -862,7 +862,7 @@ fn virtual_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                             .style(taffy::Style {
                                 flex_direction: taffy::FlexDirection::Column,
                                 grid_row: style_helpers::line(1),
-                                padding: length(4.),
+                                padding: length(4f32),
                                 align_items: Some(taffy::AlignItems::Center),
                                 grid_column: span(2),
                                 ..Default::default()
@@ -877,7 +877,7 @@ fn virtual_grid_demo(ui: &mut egui::Ui, state: &mut State) {
                                 tui.sticky([false, true].into())
                                     .style(taffy::Style {
                                         grid_row: style_helpers::line(ridx as i16),
-                                        padding: length(4.),
+                                        padding: length(4f32),
                                         ..Default::default()
                                     })
                                     .id(tid(("header", ridx, idx)))
@@ -900,33 +900,33 @@ fn custom_background_demo(ui: &mut egui::Ui, state: &mut State) {
         .open(&mut state.show_background_demo)
         .default_width(500.)
         .show(ui.ctx(), |ui| {
-            tui(ui, ui.id().with("demo"))
+            tui(ui, ui.scope_id().with("demo"))
                 .reserve_available_space()
                 .style(taffy::Style {
                     flex_direction: taffy::FlexDirection::Column,
                     justify_content: Some(taffy::JustifyContent::Center),
                     align_items: Some(taffy::AlignItems::Center),
-                    max_size: percent(1.),
-                    size: percent(1.),
-                    gap: length(10.),
+                    max_size: percent(1f32),
+                    size: percent(1f32),
+                    gap: length(10f32),
                     ..Default::default()
                 })
                 .show(|tui| {
                     let box_style = taffy::Style {
                         size: taffy::Size {
-                            height: length(200.),
-                            width: length(200.),
+                            height: length(200f32),
+                            width: length(200f32),
                         },
                         justify_content: Some(taffy::JustifyContent::Center),
                         align_items: Some(taffy::AlignItems::Center),
-                        padding: length(20.),
+                        padding: length(20f32),
                         ..Default::default()
                     };
 
                     let row_style = taffy::Style {
                         flex_direction: taffy::FlexDirection::Row,
-                        gap: length(10.),
-                        padding: length(10.),
+                        gap: length(10f32),
+                        padding: length(10f32),
                         ..Default::default()
                     };
 
@@ -1096,7 +1096,7 @@ fn custom_background_demo(ui: &mut egui::Ui, state: &mut State) {
                     );
                     tui.style(taffy::Style {
                         flex_direction: taffy::FlexDirection::Row,
-                        gap: length(20.),
+                        gap: length(20f32),
                         ..Default::default()
                     })
                     .add(|tui| {
@@ -1115,16 +1115,16 @@ fn holy_grail_demo(ui: &mut egui::Ui, state: &mut State) {
         .open(&mut state.show_holy_grail_demo)
         .default_width(500.)
         .show(ui.ctx(), |ui| {
-            tui(ui, ui.id().with("holy_grail"))
+            tui(ui, ui.scope_id().with("holy_grail"))
                 .reserve_available_space()
                 .style(taffy::Style {
                     display: taffy::Display::Grid,
                     size: taffy::Size {
-                        width: percent(1.),
-                        height: percent(1.),
+                        width: percent(1f32),
+                        height: percent(1f32),
                     },
-                    grid_template_columns: vec![length(100.), fr(1.), length(100.)],
-                    grid_template_rows: vec![length(100.), fr(1.), length(100.)],
+                    grid_template_columns: vec![length(100f32), fr(1f32), length(100f32)],
+                    grid_template_rows: vec![length(100f32), fr(1f32), length(100f32)],
                     ..Default::default()
                 })
                 .show(|tui| {

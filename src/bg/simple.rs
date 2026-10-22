@@ -190,7 +190,7 @@ impl<'a> TuiBackground<'a> {
     pub fn draw_with_response(&self) -> impl FnOnce(&mut egui::Ui, &TaffyContainerUi) -> Response {
         move |ui: &mut egui::Ui, container: &TaffyContainerUi| {
             let rect = container.full_container();
-            let response = ui.interact(rect, ui.id().with("bg"), egui::Sense::click());
+            let response = ui.interact(rect, ui.scope_id().with("bg"), egui::Sense::click());
             let widget_visuals = ui.style().interact(&response);
             self.draw_internal(ui, container, widget_visuals, Some(&response));
             response

@@ -6,7 +6,7 @@ use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 use egui::util::IdTypeMap;
-use egui::{AsId, Pos2, Response, Ui, UiBuilder};
+use egui::{AsIdSalt, Pos2, Response, Ui, UiBuilder};
 use parking_lot::{ArcMutexGuard, RawMutex};
 use taffy::prelude::*;
 use widgets::TaffySeparator;
@@ -207,7 +207,7 @@ impl Tui {
         let mut this = Self {
             main_id: id,
 
-            current_auto_id_prefix: egui::Id::new("taffy_auto_id_"),
+            current_auto_id_prefix: egui::Id::unique("taffy_auto_id_"),
 
             ui,
             current_node: None,
@@ -1082,7 +1082,7 @@ impl From<egui::Id> for TuiId {
 impl From<&str> for TuiId {
     #[inline]
     fn from(value: &str) -> Self {
-        Self::Hiarchy(egui::Id::new(value))
+        Self::Hiarchy(egui::Id::unique(value))
     }
 }
 
@@ -1091,9 +1091,9 @@ impl From<&str> for TuiId {
 #[inline]
 pub fn tid<T>(id: T) -> TuiId
 where
-    T: AsId,
+    T: AsIdSalt,
 {
-    TuiId::Hiarchy(egui::Id::new(id))
+    TuiId::Hiarchy(egui::Id::unique(id))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1437,7 +1437,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
             // How to correctly fill space between elements?
             let rect = container.full_container().expand(1.);
 
-            let _response = ui.interact(rect, ui.id().with("bg"), egui::Sense::click_and_drag());
+            let _response = ui.interact(rect, ui.scope_id().with("bg"), egui::Sense::click_and_drag());
             // Background is not transparent to events
 
             let visuals = ui.style().visuals.noninteractive();
@@ -1458,7 +1458,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
         fn background(ui: &mut egui::Ui, container: &TaffyContainerUi) {
             let rect = container.full_container();
 
-            let _response = ui.interact(rect, ui.id().with("bg"), egui::Sense::click_and_drag());
+            let _response = ui.interact(rect, ui.scope_id().with("bg"), egui::Sense::click_and_drag());
             // Background is not transparent to events
 
             let visuals = ui.style().visuals.noninteractive();
@@ -1603,7 +1603,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
 
         fn background(ui: &mut egui::Ui, container: &TaffyContainerUi) -> Response {
             let rect = container.full_container();
-            ui.interact(rect, ui.id().with("bg"), egui::Sense::click())
+            ui.interact(rect, ui.scope_id().with("bg"), egui::Sense::click())
         }
 
         let return_values =
@@ -1635,7 +1635,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
             target_tint_color: Option<egui::Color32>,
         ) -> Response {
             let rect = container.full_container();
-            let response = ui.interact(rect, ui.id().with("bg"), egui::Sense::click());
+            let response = ui.interact(rect, ui.scope_id().with("bg"), egui::Sense::click());
             let visuals = ui.style().interact(&response);
 
             let stroke = visuals.bg_stroke;
@@ -1688,7 +1688,7 @@ pub trait TuiBuilderLogic<'r>: AsTuiBuilder<'r> + Sized {
 
         fn background(ui: &mut egui::Ui, container: &TaffyContainerUi, selected: bool) -> Response {
             let rect = container.full_container();
-            let response = ui.interact(rect, ui.id().with("bg"), egui::Sense::click());
+            let response = ui.interact(rect, ui.scope_id().with("bg"), egui::Sense::click());
 
             let mut visuals = ui.style().interact_selectable(&response, selected);
 

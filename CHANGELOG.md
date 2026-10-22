@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.0
+
+* Upgraded to egui 0.37
+
 ## 0.14.0
 
 * Upgraded to egui 0.36
